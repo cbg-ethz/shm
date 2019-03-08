@@ -78,7 +78,7 @@ library(dplyr)
     {
       mb <- .markov.blanket(x, adj)
 
-      edge.potential <- theta * labels[x] * sum(labels[mb])
+      edge.potential <- theta * labels[x] * (sum(labels[mb] == labels[x]) - labels[mb] == labels[x])
       node.potential <- log(dbeta(data[x], a, 1) / dunif(data[x]))
       p  <- .sigmoid(edge.potential - node.potential)
 

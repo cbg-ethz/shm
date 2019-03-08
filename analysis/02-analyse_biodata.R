@@ -128,17 +128,11 @@ plot.igraph <- . %>%
   graph <- induced_subgraph(graph, idxs)
   data  <- data[match(V(graph)$name, data$gene),]
   data$Idx <- seq(nrow(data))
-  adj   <- as.matrix(igraph::as_adjacency_matrix(graph))
+  adj   <- as.matrix(as.matrix(igraph::as_adjacency_matrix(graph, attr="Score")))
   assertthat::assert_that(all(data$gene == V(graph)$name))
 
-  l <- list()
-  for (t in seq(0.1, 2, by = .05)) {
-    correction <- corrector(adj, data$pval, theta=t, niter=10000, seed=42)
-    l[[paste(t)]] <- correction
-  }
-
-  #correction     <- corrector(adj, data$pval, theta=0, niter=10000, seed=42)
-#  data$predicted <- correction$labels
+  correction     <- corrector(adj, data$pval, theta=1, niter=10000, seed=23)
+  data$predicted <- l[[tab$t[1]]]$labels
 
   pl.truth <- .plot.truth(graph, data)
   pl.mle <- .plot.mle(graph, data)

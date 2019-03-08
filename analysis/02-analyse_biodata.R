@@ -1,21 +1,20 @@
 library(here)
 library(readr)
 library(dplyr)
+library(igraph)
+
 library(ggplot2)
 library(cowplot)
 library(ggraph)
-library(igraph)
 library(rutil)
 source(file.path(here::here(), "analysis", "01-corrector.R"))
 
 cls <- rutil::manual_discrete_colors()
-
-
 .true.genes <- toupper(c("psmc3", "psmd4", "psmb1", "psmc5", "psmc1",
                          "polr1b", "polr2c","polr3k", "atg5"))
 
 
-.plot.truth <- function(graph, data)
+.plot.truth <- function(graph, data, names=TRUE)
 {
   good.nodes <- data$Idx[which(data$hypothesis == 1)]
   bad.nodes <- data$Idx[which(data$hypothesis != 1)]
@@ -27,8 +26,9 @@ cls <- rutil::manual_discrete_colors()
 
   pl1 <-
     ggraph(graph, layout="kk") +
-    geom_edge_fan(edge_colour='grey', edge_width=.75) +
-    geom_node_text(aes(label=V(graph)$name), repel=TRUE) +
+    geom_edge_fan(edge_colour='grey', edge_width=.75)
+  if (names)  pl1 <- pl1 + geom_node_text(aes(label=V(graph)$name), repel=TRUE, size=5)
+  pl1 <- pl1 +
     geom_node_point(aes(color=V(graph)$color), size=4) +
     scale_color_manual(values=c(cls[7], "black"),
                        labels=c("Hit gene", "No hit gene"),
@@ -62,7 +62,6 @@ cls <- rutil::manual_discrete_colors()
 
   pl1 <- ggraph(graph, layout="kk") +
     geom_edge_fan(edge_colour='grey', edge_width=.75) +
-    geom_node_text(aes(label=V(graph)$name), repel=TRUE) +
     geom_node_point(aes(color=V(graph)$color), size=4) +
     scale_color_manual(values=c(cls[7], "black", "orange", "red"),
                        labels=c("TP", "TN", "FP", "FN"),
@@ -96,12 +95,11 @@ cls <- rutil::manual_discrete_colors()
 
   pl1 <- ggraph(graph, layout="kk") +
     geom_edge_fan(edge_colour='grey', edge_width=.75) +
-    geom_node_text(aes(label=V(graph)$name), repel=TRUE) +
     geom_node_point(aes(color=V(graph)$color), size=4) +
     scale_color_manual(values=c(cls[7], "black", "orange", "red"),
                        labels=c("TP / Hit", "TN / No hit", "FP", "FN"),
                        limits=c(cls[7], "black", "orange", "red")) +
-    ggraph::theme_graph(base_family="Source Sans Pro") +
+    ggraph::theme_graph(base_family="Helvetica") +
     theme(legend.position="bottom",
           legend.title=element_blank(),
           plot.title = element_text(size=30),
@@ -117,7 +115,6 @@ plot.igraph <- . %>%
     vertex.size=2, vertex.color="black", vertex.label = V(.)$name,
     vertex.label.dist=.5, vertex.label.color="black",
     edge.color="darkgrey", edge.width=.75, edge.arrow.size=.65)
-
 
 
 (function() {
@@ -142,10 +139,8 @@ plot.igraph <- . %>%
   correction     <- corrector(adj, data$pval, theta=.1, niter=10000, seed=23)
   data$predicted <- correction$labels
 
-  data$predicted[data$gene %in% c("TRRAP", "ANAPC4")] <- 1
-  data$predicted[data$gene %in% c("POLR1B", "PSMD4")] <- -1
-
-  pl.truth <- .plot.truth(graph, data)
+  pl.graph <- .plot.truth(graph, data,names = TRUE)
+  pl.truth <- .plot.truth(graph, data,names = FALSE)
   pl.mle   <- .plot.mle(graph, data)
   pl.map   <- .plot.map(graph, data)
   leg      <- cowplot::get_legend(pl.map + theme(legend.key.width=unit(1, "cm")))
@@ -158,7 +153,10 @@ plot.igraph <- . %>%
   pl <- cowplot::plot_grid(pc, leg, nrow = 2, rel_heights = c(1, .2))
 
   rutil::saveplot(
-    pl, "bio_inference", file.path(here::here(), "results/"), format = c("eps", "pdf"),
-    width=2)
+    pl.graph, "graph", file.path(here::here(), "results/"), format = c("pdf", "svg", "eps"),
+    width=14, height=9)
+  rutil::saveplot(
+    pl, "bio_inference", file.path(here::here(), "results/"), format = c("pdf", "svg", "eps"),
+    width=19)
 })
 

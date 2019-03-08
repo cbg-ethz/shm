@@ -2,7 +2,6 @@ library(LaplacesDemon)
 library(igraph)
 library(dplyr)
 
-
 .sigmoid <- function(x)
 {
   1 / (1 + exp(-x))
@@ -48,9 +47,10 @@ library(dplyr)
 }
 
 
-corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5)
+.map.corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5, seed=22)
 {
-  set.seed(22)
+  set.seed(seed)
+
   n.obs <- length(data)
   assertthat::assert_that(n.obs == nrow(adj))
   assertthat::assert_that(n.obs == ncol(adj))
@@ -67,10 +67,15 @@ corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5)
   labels[most.likely == 1] <- -1
   energy.old <- energy <- Inf
 
-  for (iter in seq(niter)) {
+  for (iter in seq(niter))
+  {
+    if (iter %% 1000 == 0) cat(paste0("Iter: ", iter, "\n"))
     energy.old <- energy
-    a <- LaplacesDemon::rinvgamma(1, 5, 1)
-    for (x in seq(n.obs)) {
+    labels.old <- labels
+    #a <- LaplacesDemon::rinvgamma(1, 5, 1)
+    a <- beta.a
+    for (x in seq(n.obs))
+    {
       mb <- .markov.blanket(x, adj)
 
       edge.potential <- theta * labels[x] * sum(labels[mb])
@@ -79,9 +84,21 @@ corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5)
 
       labels[x] <- ifelse(p >= .5, 1, -1)
     }
+
     energy <- .energy(a, labels, data, adj, theta)
-    if (sum(abs(energy - energy.old)) < threshold) break
+    if (energy < energy.old)
+    {
+      labels <- labels.old
+    }
   }
 
   list(labels=labels, energy=energy, a=a)
+}
+
+
+corrector <- function(adj, data, take.map=TRUE, ...)
+{
+  if (take.map) ret <- .map.corrector(adj, data, ...)
+  else stop("Not implemented yet!")
+  ret
 }

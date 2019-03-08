@@ -10,8 +10,8 @@ library(dplyr)
 
 .markov.blanket <- function(i, graph)
 {
-  children <- which(graph[i, ] == 1)
-  parents <- which(graph[, i] == 1)
+  children <- which(graph[i, ] != 0)
+  parents <- which(graph[, i] != 0)
   unique(c(parents, children))
 }
 
@@ -28,7 +28,7 @@ library(dplyr)
     } else stop("what you doing, bra")
 
     mb <- .markov.blanket(i, adj)
-    energy <- energy + theta * sum(labels[mb] != labels[i])
+    energy <- energy + theta * .edge.potential(labels, i, adj)
   }
 
   energy
@@ -47,7 +47,15 @@ library(dplyr)
 }
 
 
-.map.corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5, seed=22)
+.edge.potential <- function(labels, x, adj)
+{
+  mb <- .markov.blanket(x, adj)
+
+  sum((labels[mb] == labels[x]) * adj[mb, x]) -
+    sum((labels[mb] != labels[x]) * adj[mb, x])
+}
+
+.map.corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5, seed=22, hyper.a=5, hyper.b=1)
 {
   set.seed(seed)
 
@@ -76,12 +84,9 @@ library(dplyr)
     a <- beta.a
     for (x in seq(n.obs))
     {
-      mb <- .markov.blanket(x, adj)
-
-      edge.potential <- theta * labels[x] * (sum(labels[mb] == labels[x]) - labels[mb] == labels[x])
+      edge.potential <- theta * labels[x] * .edge.potential(labels, x, adj)
       node.potential <- log(dbeta(data[x], a, 1) / dunif(data[x]))
       p  <- .sigmoid(edge.potential - node.potential)
-
       labels[x] <- ifelse(p >= .5, 1, -1)
     }
 

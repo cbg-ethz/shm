@@ -128,7 +128,7 @@ plot.igraph <- . %>%
   graph <- induced_subgraph(graph, idxs)
   data  <- data[match(V(graph)$name, data$gene),]
   data$Idx <- seq(nrow(data))
-  adj   <- as.matrix(as.matrix(igraph::as_adjacency_matrix(graph, attr="Score")))
+  adj   <- as.matrix(igraph::as_adjacency_matrix(graph, attr="Score"))
   assertthat::assert_that(all(data$gene == V(graph)$name))
 
   correction     <- corrector(adj, data$pval, theta=1, niter=10000, seed=23)

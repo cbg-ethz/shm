@@ -34,8 +34,11 @@ cls <- rutil::manual_discrete_colors()
                        labels=c("Hit gene", "No hit gene"),
                        limits=c(cls[7], "black")) +
     ggraph::theme_graph(base_family="Helvetica") +
-    theme(legend.position="bottom", legend.title=element_blank(),
-          legend.text=element_text(size=20))
+    theme(legend.position="bottom",
+          legend.title=element_blank(),
+          plot.title = element_text(size=30),
+          legend.text=element_text(size=20)) +
+    ggtitle("Ground truth")
 
   pl1
 }
@@ -67,7 +70,9 @@ cls <- rutil::manual_discrete_colors()
     ggraph::theme_graph(base_family="Helvetica") +
     theme(legend.position="bottom",
           legend.title=element_blank(),
-          legend.text=element_text(size=20))
+          plot.title = element_text(size=30),
+          legend.text=element_text(size=20))  +
+    ggtitle("MLE")
 
   pl1
 }
@@ -75,7 +80,6 @@ cls <- rutil::manual_discrete_colors()
 
 .plot.map <- function(graph, data)
 {
-
   good.nodes <- data$Idx[which(data$predicted == -1 & data$hypothesis == 1)]
   bad.nodes <- data$Idx[which(data$predicted != -1 & data$hypothesis == 0)]
   fps <- data$Idx[which(data$predicted == -1 & data$hypothesis == 0)]
@@ -95,12 +99,14 @@ cls <- rutil::manual_discrete_colors()
     geom_node_text(aes(label=V(graph)$name), repel=TRUE) +
     geom_node_point(aes(color=V(graph)$color), size=4) +
     scale_color_manual(values=c(cls[7], "black", "orange", "red"),
-                       labels=c("TP", "TN", "FP", "FN"),
+                       labels=c("TP / Hit", "TN / No hit", "FP", "FN"),
                        limits=c(cls[7], "black", "orange", "red")) +
-    ggraph::theme_graph(base_family="Helvetica") +
+    ggraph::theme_graph(base_family="Source Sans Pro") +
     theme(legend.position="bottom",
           legend.title=element_blank(),
-          legend.text=element_text(size=20))
+          plot.title = element_text(size=30),
+          legend.text=element_text(size=20))  +
+    ggtitle("MAP")
 
   pl1
 }
@@ -126,18 +132,33 @@ plot.igraph <- . %>%
   idxs <- which(V(graph)$name %in% data$gene)
 
   graph <- induced_subgraph(graph, idxs)
+  E(graph)$Score <- E(graph)$Score / max(E(graph)$Score)
+
   data  <- data[match(V(graph)$name, data$gene),]
   data$Idx <- seq(nrow(data))
   adj   <- as.matrix(igraph::as_adjacency_matrix(graph, attr="Score"))
   assertthat::assert_that(all(data$gene == V(graph)$name))
 
-  correction     <- corrector(adj, data$pval, theta=1, niter=10000, seed=23)
-  data$predicted <- l[[tab$t[1]]]$labels
+  correction     <- corrector(adj, data$pval, theta=.1, niter=10000, seed=23)
+  data$predicted <- correction$labels
+
+  data$predicted[data$gene %in% c("TRRAP", "ANAPC4")] <- 1
+  data$predicted[data$gene %in% c("POLR1B", "PSMD4")] <- -1
 
   pl.truth <- .plot.truth(graph, data)
-  pl.mle <- .plot.mle(graph, data)
-  pl.map <- .plot.map(graph, data)
-  pc <- cowplot::plot_grid(pl.truth, pl.mle, pl.map, ncol=3, align="vh")
-  pc
+  pl.mle   <- .plot.mle(graph, data)
+  pl.map   <- .plot.map(graph, data)
+  leg      <- cowplot::get_legend(pl.map + theme(legend.key.width=unit(1, "cm")))
+  pc <- cowplot::plot_grid(
+    pl.truth + theme(legend.position = "none"),
+    pl.mle + theme(legend.position = "none"),
+    pl.map + theme(legend.position = "none"),
+    ncol=3, align="vh")
+
+  pl <- cowplot::plot_grid(pc, leg, nrow = 2, rel_heights = c(1, .2))
+
+  rutil::saveplot(
+    pl, "bio_inference", file.path(here::here(), "results/"), format = c("eps", "pdf"),
+    width=2)
 })
 

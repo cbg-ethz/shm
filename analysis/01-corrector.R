@@ -16,6 +16,15 @@ library(dplyr)
 }
 
 
+.edge.potential <- function(labels, x, adj)
+{
+  mb <- .markov.blanket(x, adj)
+
+  sum((labels[mb] == labels[x]) * adj[mb, x]) -
+    sum((labels[mb] != labels[x]) * adj[mb, x])
+}
+
+
 .energy <- function(a, labels, data, adj, theta)
 {
   energy <- -log(LaplacesDemon::dinvgamma(a, 5, 1))
@@ -27,7 +36,6 @@ library(dplyr)
       energy <- energy - log(dunif(data[i]))
     } else stop("what you doing, bra")
 
-    mb <- .markov.blanket(i, adj)
     energy <- energy + theta * .edge.potential(labels, i, adj)
   }
 
@@ -43,17 +51,15 @@ library(dplyr)
   pos.norm <- dbeta(data, beta.a, 1)
   local.evidence <- matrix(c(neg.norm, pos.norm), ncol=2)
   most.likely <- apply(local.evidence, 1, which.max)
-  most.likely
+
+  list(most.likely=most.likely,
+       beta.a=beta.a,
+       neg.norm=neg.norm,
+       pos.norm=pos.norm,
+       local.evidence=local.evidence)
 }
 
 
-.edge.potential <- function(labels, x, adj)
-{
-  mb <- .markov.blanket(x, adj)
-
-  sum((labels[mb] == labels[x]) * adj[mb, x]) -
-    sum((labels[mb] != labels[x]) * adj[mb, x])
-}
 
 .map.corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5, seed=22, hyper.a=5, hyper.b=1)
 {
@@ -64,12 +70,9 @@ library(dplyr)
   assertthat::assert_that(n.obs == ncol(adj))
 
   # initialize posterior with MLE
-  bum.fit <- BioNet::bumOptim(data)
-  beta.a <- bum.fit$a
-  neg.norm <- dunif(data)
-  pos.norm <- dbeta(data, beta.a, 1)
-  local.evidence <- matrix(c(neg.norm, pos.norm), ncol=2)
-  most.likely <- apply(local.evidence, 1, which.max)
+  mle <- .mle(data)
+  beta.a <- mle$beta.a
+  most.likely <- mle$most.likely
 
   labels <- rep(1, length(data))
   labels[most.likely == 1] <- -1

@@ -45,10 +45,10 @@ library(dplyr)
 
 .mle <- function(data)
 {
-  bum.fit <- BioNet::bumOptim(data)
+  bum.fit <- BioNet::bumOptim(data$data, labels = data$genes)
   beta.a <- bum.fit$a
-  neg.norm <- dunif(data)
-  pos.norm <- dbeta(data, beta.a, 1)
+  neg.norm <- dunif(data$data)
+  pos.norm <- dbeta(data$data, beta.a, 1)
   local.evidence <- matrix(c(neg.norm, pos.norm), ncol=2)
   most.likely <- apply(local.evidence, 1, which.max)
 
@@ -61,11 +61,14 @@ library(dplyr)
 
 
 
-.map.corrector <- function(adj, data, theta=1, niter=10000, threshold=1e-5, seed=22, hyper.a=5, hyper.b=1)
+.map.corrector <- function(adj, data, theta=1, niter=10000,
+                           nwarm=1000, threshold=1e-5, seed=22, hyper.a=5, hyper.b=1)
 {
   set.seed(seed)
+  assertthat::assert_that("genes" %in% colnames(data))
+  assertthat::assert_that("data" %in% colnames(data))
 
-  n.obs <- length(data)
+  n.obs <- length(data$data)
   assertthat::assert_that(n.obs == nrow(adj))
   assertthat::assert_that(n.obs == ncol(adj))
 
@@ -74,11 +77,14 @@ library(dplyr)
   beta.a <- mle$beta.a
   most.likely <- mle$most.likely
 
-  labels <- rep(1, length(data))
+  labels <- rep(1, length(data$data))
   labels[most.likely == 1] <- -1
   energy.old <- energy <- Inf
 
-  for (iter in seq(niter))
+  samples <- matrix(0, niter, n.obs,
+                    dimnames = list(NULL, data$genes))
+
+  for (iter in seq(niter + nwarm))
   {
     if (iter %% 1000 == 0) cat(paste0("Iter: ", iter, "\n"))
     energy.old <- energy
@@ -88,19 +94,23 @@ library(dplyr)
     for (x in seq(n.obs))
     {
       edge.potential <- theta * labels[x] * .edge.potential(labels, x, adj)
-      node.potential <- log(dbeta(data[x], a, 1) / dunif(data[x]))
+      node.potential <- log(dbeta(data$data[x], a, 1) / dunif(data$data[x]))
       p  <- .sigmoid(edge.potential - node.potential)
-      labels[x] <- ifelse(p >= .5, 1, -1)
+      #labels[x] <- ifelse(p >= .5, 1, -1)
+      labels[x] <- sample(c(1, -1), size = 1, prob = c(p, 1 - p))
     }
 
-    energy <- .energy(a, labels, data, adj, theta)
-    if (energy < energy.old)
-    {
+    if (iter > nwarm) {
+      samples[iter - nwarm,] <- labels
+    }
+
+    energy <- .energy(a, labels, data$data, adj, theta)
+    if (energy < energy.old) {
       labels <- labels.old
     }
   }
 
-  list(labels=labels, energy=energy, a=a)
+  list(labels=labels, energy=energy, a=a, samples=samples)
 }
 
 

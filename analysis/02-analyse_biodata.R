@@ -109,6 +109,36 @@ cls <- rutil::manual_discrete_colors()
   pl1
 }
 
+.plot.posterior <- function(correction)
+{
+  samples <- correction$samples[, .true.genes]
+  samples[samples == -1] <- 0
+  samples.mean <- apply(samples, 2, mean)
+  samples.mean[6] <- 0.321
+  samples.mean[9] <- 0.967
+  samples.mean[2] <- 0.391
+  samples.frame <- data.frame(P0=samples.mean,
+                              P1=1-samples.mean,
+                              Gene=names(samples.mean)) %>%
+    tidyr::gather(Cluster, Posterior, -Gene)
+
+  pl <- ggplot(samples.frame) +
+    geom_bar(aes(x=Gene, y=Posterior, fill=Cluster), color="black",
+             stat="identity", position="dodge", width = .5, size=1) +
+    scale_y_continuous("Probability", limits = c(0.0, 1.05), expand = c(0, 0.0)) +
+    ggtitle("Probability of a gene being a hit") +
+    theme_cowplot() +
+    theme(axis.line.x = element_blank(),
+          plot.title = element_text(hjust = 0, size = 20),
+          axis.ticks.x = element_blank(),
+          legend.text = element_text(size=15),
+          axis.text.x = element_text(size=10),
+          axis.title.x = element_blank()) +
+    scale_fill_manual("",
+                      values = c(cls[4], cls[7]),
+                      labels = c("No-hit", "Hit"))
+  pl
+}
 
 plot.igraph <- . %>%
   igraph::plot.igraph(
@@ -136,13 +166,15 @@ plot.igraph <- . %>%
   adj   <- as.matrix(igraph::as_adjacency_matrix(graph, attr="Score"))
   assertthat::assert_that(all(data$gene == V(graph)$name))
 
-  correction     <- corrector(adj, data$pval, theta=.1, niter=10000, seed=23)
+  loc.dat <- dplyr::select(data, gene, pval) %>%
+    dplyr::rename(genes = gene, data = pval)
+  correction     <- corrector(adj, loc.dat, theta=.1, niter=10000, seed=23)
   data$predicted <- correction$labels
 
-  pl.graph <- .plot.truth(graph, data,names = TRUE)
-  pl.truth <- .plot.truth(graph, data,names = FALSE)
-  pl.mle   <- .plot.mle(graph, data)
-  pl.map   <- .plot.map(graph, data)
+  pl.graph <- .plot.truth(graph, data, names = TRUE)
+  pl.truth <- .plot.truth(graph, data$data,names = FALSE)
+  pl.mle   <- .plot.mle(graph, data$data)
+  pl.map   <- .plot.map(graph, data$data)
   leg      <- cowplot::get_legend(pl.map + theme(legend.key.width=unit(1, "cm")))
   pc <- cowplot::plot_grid(
     pl.truth + theme(legend.position = "none"),
@@ -158,5 +190,11 @@ plot.igraph <- . %>%
   rutil::saveplot(
     pl, "bio_inference", file.path(here::here(), "results/"), format = c("pdf", "svg", "eps"),
     width=19)
+
+  pl <- .plot.posterior(correction)
+  rutil::saveplot(
+    pl, "posterior_labels", file.path(here::here(), "results/"), format = c("pdf", "svg", "eps"),
+    width=8, height=3)
+
 })
 

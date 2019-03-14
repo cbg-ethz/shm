@@ -1,13 +1,12 @@
 
 import numpy as np
 import pandas as pd
-
+from arviz import convert_to_dataset
+from arviz.plots.plot_utils import xarray_to_ndarray, get_coords
 
 from matplotlib import pyplot as plt
 import seaborn as sns
 import arviz as az
-
-
 
 
 sns.set_style(
@@ -101,7 +100,6 @@ def plot_neff(trace, var_name):
                          "n_eff / n", "Effective sample size", "n_eff / n")
 
 
-
 def plot_rhat(trace, var_name):
     rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
     boundary = [1.05, 1.1, 1.5]
@@ -117,7 +115,6 @@ def plot_rhat(trace, var_name):
     return _plot_dotline(rhat_samples, boundary, "rhat",
                          low, mid, high,
                          r"\hat{R}", "Effective sample size", r"$\hat{R}$")
-
 
 
 def _to_df(trace, var_name, idx):
@@ -170,8 +167,41 @@ def plot_hist(trace, var_name, ntune, idx, title):
 
     return fig, ax
 
-def plot_parallel(trace):
+
+def _extract(trace):
+    divergent_data = convert_to_dataset(trace, group="sample_stats")
+    _, diverging_mask = xarray_to_ndarray(
+      divergent_data, var_names=("diverging",), combined=True)
+    diverging_mask = np.squeeze(diverging_mask)
+    posterior_data = convert_to_dataset(trace, group="posterior")
+    var_names, _posterior = xarray_to_ndarray(
+      get_coords(posterior_data, {}), var_names=None, combined=True)
+    return diverging_mask, var_names, _posterior
+
+
+def plot_parallel(trace, ntune, nsample):
+    diverging_mask, var_names, _posterior = _extract(trace)
+    var_names = [var.replace("\n", " ") for var in var_names]
+
+    n_all = ntune + nsample
+    rng = list(range(ntune, n_all))
+    lens = np.append(np.append(rng, rng + n_all),
+                     np.append(rng + n_all * 2, rng + n_all * 3))
+    diverging_mask = diverging_mask[lens]
+    _posterior = _posterior[lens]
+
     fig, ax = plt.subplots(figsize=(8, 3), dpi=720)
-    az.plot_parallel(trace, ax=ax)
-    ax.xaxis.set_ticklabels([])
+    ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)
+
+    if np.any(diverging_mask):
+        ax.plot(_posterior[:, diverging_mask], color="darkred", lw=1)
+
+    ax.set_xticks(range(len(var_names)))
+    ax.set_xticklabels(var_names)
+    plt.xticks(rotation=90)
+    ax.plot([], color="black", label="non-divergent")
+    if np.any(diverging_mask):
+        ax.plot([], color="darkred", label="divergent")
+    ax.legend(frameon=False)
+
     return fig, ax

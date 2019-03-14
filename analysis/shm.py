@@ -13,7 +13,8 @@ from matplotlib import pyplot as plt
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 
-from analysis.plot import plot_trace, plot_neff, plot_rhat
+from analysis.plot import plot_trace, plot_neff, plot_rhat, plot_parallel, \
+    plot_hist
 
 warnings.filterwarnings("ignore")
 
@@ -92,6 +93,70 @@ def flat(read_counts):
     return 1
 
 
+def _plot_forest(trace, outfile, fm):
+    fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
+    _[0].set_title('')
+    _[0].set_title('95% credible intervals', size=15, loc="left")
+    fig.savefig(outfile + "_forest_gamma." + fm)
+
+    fig, _ = az.plot_forest(trace, var_names="beta", credible_interval=0.95)
+    _[0].set_title('')
+    _[0].set_title('95% credible intervals', size=15, loc="left")
+    fig.savefig(outfile + "_forest_beta." + fm)
+
+    fig, _ = az.plot_forest(trace, var_names="category", credible_interval=0.95)
+    _[0].set_title('')
+    _[0].set_title('95% credible intervals', size=15, loc="left")
+    fig.savefig(outfile + "_forest_category." + fm)
+
+
+def _plot_trace(trace, outfile, n_tune, genes, fm):
+    for i, g in enumerate(genes):
+        fig, _ = plot_trace(trace, "gamma", n_tune, i, g)
+        fig.savefig(outfile + "_trace_gamma_{}_{}.{}".format(i, g, fm))
+
+
+def _plot_rhat(trace, outfile, fm):
+    fig, ax = plot_rhat(trace, "gamma")
+    fig.savefig(outfile + "_rhat_gamma." + fm)
+    fig, ax = plot_rhat(trace, "beta")
+    fig.savefig(outfile + "_rhat_beta." + fm)
+    fig, ax = plot_rhat(trace, "category")
+    fig.savefig(outfile + "_rhat_category." + fm)
+
+
+def _plot_neff(trace, outfile, fm):
+    fig, ax = plot_neff(trace, "gamma")
+    fig.savefig(outfile + "_neff_gamma." + fm)
+    fig, ax = plot_neff(trace, "beta")
+    fig.savefig(outfile + "_neff_beta." + fm)
+    fig, ax = plot_neff(trace, "category")
+    fig.savefig(outfile + "_neff_category." + fm)
+
+
+def _plot_parallel(trace, outfile, ntune, nsample, fm):
+    fig, ax = plot_parallel(trace, ntune, nsample)
+    fig.savefig(outfile + "_parallel." + fm)
+
+
+def _plot_hist(trace, outfile, n_tune, genes, fm):
+    for i, g in enumerate(genes):
+        fig, _ = plot_hist(trace, "gamma", n_tune, i, g)
+        fig.savefig(outfile + "_hist_gamma_{}_{}.{}".format(i, g, fm))
+
+def _plot(model, trace, outfile, genes, n_tune, n_sample):
+    graph = model_to_graphviz(model)
+    graph.render(filename=outfile + ".dot")
+
+    for fm in ["pdf", "svg", "eps"]:
+        _plot_forest(trace, outfile, fm)
+        _plot_trace(trace, outfile, n_tune, genes, fm)
+        _plot_hist(trace, outfile, n_tune, genes, fm)
+        _plot_neff(trace, outfile, fm)
+        _plot_rhat(trace, outfile, fm)
+        _plot_parallel(trace, outfile, n_tune, n_sample, fm)
+
+
 @click.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
@@ -105,43 +170,15 @@ def run(infile, outfile, model_type):
     else:
         model = flat(read_counts)
 
-    n_sample, n_tune, n_init = 1000, 500, 1000
-
+    n_sample, n_tune, n_init = 100, 50, 100
     with model:
         trace = pm.sample(n_sample, tune=n_tune, init="advi", n_init=n_init,
-                          chains=4, random_seed=42, progressbar=True,
+                          chains=4, random_seed=42,
                           discard_tuned_samples=False)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
-
-    graph = model_to_graphviz(model)
-    graph.render(filename=outfile + ".dot")
-
-    for format in ["pdf", "svg", "eps"]:
-        fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
-        fig.savefig(outfile + "_forest_gamma." + format)
-        fig, _ = az.plot_forest(trace, var_names="beta", credible_interval=0.95)
-        fig.savefig(outfile + "_forest_beta." + format)
-        fig, _ = az.plot_forest(trace, var_names="category", credible_interval=0.95)
-        fig.savefig(outfile + "_forest_category." + format)
-
-        for i, g in enumerate(genes):
-            fig, _ = plot_trace(trace, "gamma", n_tune, i, g)
-            fig.savefig(outfile + "_trace_gamma_{}_{}.{}".format(i, g, format))
+    _plot(model, trace, outfile, genes, n_tune, n_sample)
 
 
-        fig, ax = plot_neff(trace, "gamma")
-        fig.savefig(outfile + "_neff_gamma." + format)
-        fig, ax = plot_neff(trace, "beta")
-        fig.savefig(outfile + "_neff_beta." + format)
-        fig, ax = plot_neff(trace, "category")
-        fig.savefig(outfile + "_neff_category." + format)
-        fig, ax = plot_rhat(trace, "gamma")
-        fig.savefig(outfile + "_rhat_gamma." + format)
-        fig, ax = plot_rhat(trace, "beta")
-        fig.savefig(outfile + "_rhat_beta." + format)
-        fig, ax = plot_rhat(trace, "category")
-        fig.savefig(outfile + "_rhat_category." + format)
-
-        if __name__ == "__main__":
-            run()
+if __name__ == "__main__":
+    run()

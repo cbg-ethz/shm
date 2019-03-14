@@ -1,29 +1,21 @@
 #!/usr/bin/env python
 
 import warnings
+
+import arviz as az
 import click
 import numpy as np
 import pandas as pd
 import pymc3 as pm
 import scipy as sp
 import theano.tensor as tt
-from pymc3 import model_to_graphviz
-
 from matplotlib import pyplot as plt
-import seaborn as sns
-import arviz as az
+from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 
+from analysis.plot import plot_trace, plot_neff, plot_rhat
+
 warnings.filterwarnings("ignore")
-sns.set_style(
-  "white",
-  {
-      "xtick.bottom": True,
-      "ytick.left": True,
-      "axes.spines.top": False,
-      "axes.spines.right": False,
-  },
-)
 
 models = ["shm", "flat"]
 
@@ -43,107 +35,12 @@ def _load_data(infile):
     return dat
 
 
-def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel):
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=720)
-
-    plt.axvline(x=boundary[0], color="grey", linestyle="--")
-    plt.axvline(x=boundary[1], color="grey", linestyle="--")
-    plt.axvline(x=boundary[2], color="grey", linestyle="--")
-
-    plt.hlines(
-      y=table["param"].values[low],
-      xmin=np.min(table["neff"].values),
-      xmax=table[var].values[low],
-      linewidth=1,
-      color="#023858",
-    )
-    plt.hlines(
-      y=table["param"].values[mid],
-      xmin=np.min(table[var].values),
-      xmax=table[var].values[mid],
-      linewidth=1,
-      color="#045a8d",
-    )
-    plt.hlines(
-      y=table["param"].values[high],
-      xmin=np.min(table[var].values),
-      xmax=table[var].values[high],
-      linewidth=1,
-      color="#74a9cf",
-    )
-
-    plt.plot(
-      table[var].values[low],
-      table["param"].values[low],
-      "o",
-      markersize=5,
-      color="#023858",
-      label="${} < {}$".format(legend, boundary[0]),
-    )
-    plt.plot(
-      table[var].values[mid],
-      table["param"].values[mid],
-      "o",
-      markersize=5,
-      color="#045a8d",
-      label="${} < {}$".format(legend, boundary[1]),
-    )
-    plt.plot(
-      table[var].values[high],
-      table["param"].values[high],
-      "o",
-      markersize=5,
-      color="#74a9cf",
-      label="${} >= {}$".format(legend, boundary[1]),
-    )
-
-    plt.title(title)
-    plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", frameon=False)
-    plt.xlabel(xlabel)
-    plt.ylabel("Parameters")
-    plt.yticks([])
-
-    return fig, ax
-
-
-def plot_neff(trace, var_name):
-    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
-    boundary = [0.1, 0.5, 1]
-    eff_samples = pd.DataFrame({
-        "neff": eff_samples[var_name].values / len(trace),
-        "param": [var_name + str(i) for i in range(len(eff_samples))]})
-    low = np.where(eff_samples["neff"].values < boundary[0])
-    mid = np.where(np.logical_and(
-        eff_samples["neff"].values >= boundary[0],
-        eff_samples["neff"].values < boundary[1]))
-    high = np.where(eff_samples["neff"].values >= boundary[1])
-
-    return _plot_dotline(eff_samples, boundary, "neff",
-                         low, mid, high,
-                         "n_eff / n", "Effective sample size", "n_eff / n")
-
-
-def plot_rhat(trace, var_name):
-    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
-    boundary = [1.05, 1.1, 1.5]
-    rhat_samples = pd.DataFrame({
-          "rhat": rhat_samples[var_name].values,
-          "param": [var_name + str(i) for i in range(len(rhat_samples))]})
-    low = np.where(rhat_samples["rhat"].values < boundary[0])
-    mid = np.where(np.logical_and(
-        rhat_samples["rhat"].values >= boundary[0],
-        rhat_samples["rhat"].values < boundary[1]))
-    high = np.where(rhat_samples["rhat"].values >= boundary[1])
-
-    return _plot_dotline(rhat_samples, boundary, "rhat",
-                         low, mid, high,
-                         r"\hat{R}", "Effective sample size", r"$\hat{R}$")
-
-
 def shm(read_counts: pd.DataFrame):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
+    conditions = sp.unique(read_counts["Condition"].values)
+    genes = sp.unique(read_counts["Gene"].values)
     gene_idx = le.fit_transform(read_counts["Gene"].values)
     con_idx = le.fit_transform(read_counts["Condition"].values)
 
@@ -154,11 +51,15 @@ def shm(read_counts: pd.DataFrame):
     len_sirnas_per_gene = int(len_sirnas / len_genes)
 
     beta_idx = np.repeat(range(len_genes), len_conditions)
+    gamma_idx = np.repeat()
     beta_data_idx = np.repeat(beta_idx, int(n / len(beta_idx)))
 
+    gene_conds = [a + b for a, b in zip(genes[beta_idx],
+                                        conditions[np.repeat(range(len_genes),
+                                                             len(conditions))])]
+
     l_idx = np.repeat(
-      range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates
-    )
+      range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates)
 
     with pm.Model() as model:
         p = pm.Dirichlet("p", a=np.array([1.0, 1.0]), shape=2)
@@ -184,7 +85,7 @@ def shm(read_counts: pd.DataFrame):
           observed=sp.squeeze(read_counts["counts"].values),
         )
 
-    return model
+    return model, genes, gene_conds
 
 
 def flat(read_counts):
@@ -200,20 +101,16 @@ def run(infile, outfile, model_type):
     read_counts = read_counts.query("Gene == 'POLR3K' | Gene == 'BCR'")
 
     if model_type == models[0]:
-        model = shm(read_counts)
+        model, genes, gene_conds = shm(read_counts)
     else:
         model = flat(read_counts)
 
+    n_sample, n_tune, n_init = 1000, 500, 1000
+
     with model:
-        trace = pm.sample(
-          1000,
-          tune=500,
-          init="advi",
-          n_init=1000,
-          chains=4,
-          random_seed=42,
-          progressbar=True,
-          discard_tuned_samples=False)
+        trace = pm.sample(n_sample, tune=n_tune, init="advi", n_init=n_init,
+                          chains=4, random_seed=42, progressbar=True,
+                          discard_tuned_samples=False)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
 
@@ -221,24 +118,17 @@ def run(infile, outfile, model_type):
     graph.render(filename=outfile + ".dot")
 
     for format in ["pdf", "svg", "eps"]:
-        fig = plt.figure()
-        az.plot_trace(trace, var_names=["gamma"])
-        fig.savefig(outfile + "_trace_gamma." + format)
+        fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
+        fig.savefig(outfile + "_forest_gamma." + format)
+        fig, _ = az.plot_forest(trace, var_names="beta", credible_interval=0.95)
+        fig.savefig(outfile + "_forest_beta." + format)
+        fig, _ = az.plot_forest(trace, var_names="category", credible_interval=0.95)
+        fig.savefig(outfile + "_forest_category." + format)
 
-        fig = plt.figure()
-        az.plot_trace(trace, var_names=["category"])
-        fig.savefig(outfile + "_trace_category." + format)
+        for i, g in enumerate(genes):
+            fig, _ = plot_trace(trace, "gamma", n_tune, i, g)
+            fig.savefig(outfile + "_trace_gamma_{}_{}.{}".format(i, g, format))
 
-        fig = plt.figure()
-        az.plot_trace(trace, var_names=["beta"])
-        fig.savefig(outfile + "_trace_beta." + format)
-
-        fig = plt.figure()
-        az.plot_forest(
-          trace, credible_interval=0.95,
-          var_names=["beta", "gamma", "category"]
-        )
-        fig.savefig(outfile + "_forest." + format)
 
         fig, ax = plot_neff(trace, "gamma")
         fig.savefig(outfile + "_neff_gamma." + format)
@@ -253,6 +143,5 @@ def run(infile, outfile, model_type):
         fig, ax = plot_rhat(trace, "category")
         fig.savefig(outfile + "_rhat_category." + format)
 
-
-if __name__ == "__main__":
-    run()
+        if __name__ == "__main__":
+            run()

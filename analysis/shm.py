@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 
 import warnings
-
-warnings.filterwarnings("ignore")
-
 import click
 import numpy as np
 import pandas as pd
 import pymc3 as pm
 import scipy as sp
 import theano.tensor as tt
-
-from sklearn import preprocessing
 from pymc3 import model_to_graphviz
 
 from matplotlib import pyplot as plt
 import seaborn as sns
 import arviz as az
+from sklearn.preprocessing import LabelEncoder
 
+warnings.filterwarnings("ignore")
 sns.set_style(
   "white",
   {
@@ -33,18 +30,15 @@ models = ["shm", "flat"]
 
 def _load_data(infile):
     dat = pd.read_csv(infile, sep="\t")
-    dat = (
-        dat[["Condition", "Gene", "sgRNA", "r1", "r2"]]
-            .query("Gene != 'Control'")
-            .melt(
-          id_vars=["Gene", "sgRNA"],
-          value_vars=["r1", "r2"],
-          var_name="replicate",
-          value_name="counts",
-        )
-            .sort_values(["Gene", "Condition", "sgRNA", "replicate"])
-    )
-    dat["sgRNA"] = preprocessing.LabelEncoder.fit_transform(dat["sgRNA"].values)
+    dat = (dat[["Condition", "Gene", "sgRNA", "r1", "r2"]]
+           .query("Gene != 'Control'")
+           .melt(id_vars=["Gene", "Condition", "sgRNA"],
+                 value_vars=["r1", "r2"],
+                 var_name="replicate",
+                 value_name="counts")
+           .sort_values(["Gene", "Condition", "sgRNA", "replicate"])
+           )
+    dat["sgRNA"] = LabelEncoder().fit_transform(dat["sgRNA"].values)
     dat["counts"] = sp.floor(dat["counts"].values)
     return dat
 
@@ -65,14 +59,14 @@ def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel):
     )
     plt.hlines(
       y=table["param"].values[mid],
-      xmin=np.min(table["neff"].values),
+      xmin=np.min(table[var].values),
       xmax=table[var].values[mid],
       linewidth=1,
       color="#045a8d",
     )
     plt.hlines(
       y=table["param"].values[high],
-      xmin=np.min(table["neff"].values),
+      xmin=np.min(table[var].values),
       xmax=table[var].values[high],
       linewidth=1,
       color="#74a9cf",
@@ -113,69 +107,42 @@ def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel):
 
 
 def plot_neff(trace, var_name):
-    eff_samples = az.effective_sample_size(trace).to_dataframe()
+    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
     boundary = [0.1, 0.5, 1]
     eff_samples = pd.DataFrame({
-        "neff": eff_samples[[var_name]].values[:, 0] / len(trace),
-        "param": [var_name + str(i) for i in range(eff_samples.shape[0])],
-    }
-    )
+        "neff": eff_samples[var_name].values / len(trace),
+        "param": [var_name + str(i) for i in range(len(eff_samples))]})
     low = np.where(eff_samples["neff"].values < boundary[0])
-    mid = np.where(
-      np.logical_and(
+    mid = np.where(np.logical_and(
         eff_samples["neff"].values >= boundary[0],
-        eff_samples["neff"].values < boundary[1],
-      )
-    )
+        eff_samples["neff"].values < boundary[1]))
     high = np.where(eff_samples["neff"].values >= boundary[1])
 
-    return _plot_dotline(
-      eff_samples,
-      boundary,
-      "neff",
-      low,
-      mid,
-      high,
-      "n_eff / n",
-      "Effective sample size",
-      "n_eff / n",
-    )
+    return _plot_dotline(eff_samples, boundary, "neff",
+                         low, mid, high,
+                         "n_eff / n", "Effective sample size", "n_eff / n")
 
 
 def plot_rhat(trace, var_name):
-    rhat_samples = az.rhat(trace).to_dataframe()
+    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
     boundary = [1.05, 1.1, 1.5]
-    rhat_samples = pd.DataFrame(
-      {
-          "rhat": rhat_samples[[var_name]].values[:, 0],
-          "param": [var_name + str(i) for i in range(rhat_samples.shape[0])],
-      }
-    )
+    rhat_samples = pd.DataFrame({
+          "rhat": rhat_samples[var_name].values,
+          "param": [var_name + str(i) for i in range(len(rhat_samples))]})
     low = np.where(rhat_samples["rhat"].values < boundary[0])
-    mid = np.where(
-      np.logical_and(
+    mid = np.where(np.logical_and(
         rhat_samples["rhat"].values >= boundary[0],
-        rhat_samples["rhat"].values < boundary[1],
-      )
-    )
+        rhat_samples["rhat"].values < boundary[1]))
     high = np.where(rhat_samples["rhat"].values >= boundary[1])
 
-    return _plot_dotline(
-      rhat_samples,
-      boundary,
-      "rhat",
-      low,
-      mid,
-      high,
-      r"\hat{R}",
-      "Effective sample size",
-      r"$\hat{R}$",
-    )
+    return _plot_dotline(rhat_samples, boundary, "rhat",
+                         low, mid, high,
+                         r"\hat{R}", "Effective sample size", r"$\hat{R}$")
 
 
 def shm(read_counts: pd.DataFrame):
     n, _ = read_counts.shape
-    le = preprocessing.LabelEncoder()
+    le = LabelEncoder()
 
     gene_idx = le.fit_transform(read_counts["Gene"].values)
     con_idx = le.fit_transform(read_counts["Condition"].values)
@@ -187,12 +154,11 @@ def shm(read_counts: pd.DataFrame):
     len_sirnas_per_gene = int(len_sirnas / len_genes)
 
     beta_idx = np.repeat(range(len_genes), len_conditions)
-    beta_data_idx = np.repeat(beta_idx, n / len(beta_idx))
+    beta_data_idx = np.repeat(beta_idx, int(n / len(beta_idx)))
 
     l_idx = np.repeat(
       range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates
     )
-    l_idx
 
     with pm.Model() as model:
         p = pm.Dirichlet("p", a=np.array([1.0, 1.0]), shape=2)
@@ -231,7 +197,7 @@ def flat(read_counts):
 @click.option("--model-type", type=click.Choice(models), default="shm")
 def run(infile, outfile, model_type):
     read_counts = _load_data(infile)
-    read_counts = read_counts.query("Gene == 'POLR3K'")
+    read_counts = read_counts.query("Gene == 'POLR3K' | Gene == 'BCR'")
 
     if model_type == models[0]:
         model = shm(read_counts)
@@ -240,36 +206,40 @@ def run(infile, outfile, model_type):
 
     with model:
         trace = pm.sample(
-          10000,
-          tune=5000,
+          1000,
+          tune=500,
           init="advi",
-          n_init=10000,
+          n_init=1000,
           chains=4,
           random_seed=42,
-          progressbar=False,
-          discard_tuned_samples=False,
-        )
+          progressbar=True,
+          discard_tuned_samples=False)
 
-    pm.save_trace(trace, outfile + "_trace")
+    pm.save_trace(trace, outfile + "_trace", overwrite=True)
 
     graph = model_to_graphviz(model)
     graph.render(filename=outfile + ".dot")
 
     for format in ["pdf", "svg", "eps"]:
-        fig, axes = az.plot_trace(trace, var_names=["gamma"])
+        fig = plt.figure()
+        az.plot_trace(trace, var_names=["gamma"])
         fig.savefig(outfile + "_trace_gamma." + format)
 
-        fig, axes = az.plot_trace(trace, var_names=["category"])
+        fig = plt.figure()
+        az.plot_trace(trace, var_names=["category"])
         fig.savefig(outfile + "_trace_category." + format)
 
-        fig, axes = az.plot_trace(trace, var_names=["beta"])
+        fig = plt.figure()
+        az.plot_trace(trace, var_names=["beta"])
         fig.savefig(outfile + "_trace_beta." + format)
 
-        fig, axes = az.plot_forest(
+        fig = plt.figure()
+        az.plot_forest(
           trace, credible_interval=0.95,
           var_names=["beta", "gamma", "category"]
         )
         fig.savefig(outfile + "_forest." + format)
+
         fig, ax = plot_neff(trace, "gamma")
         fig.savefig(outfile + "_neff_gamma." + format)
         fig, ax = plot_neff(trace, "beta")

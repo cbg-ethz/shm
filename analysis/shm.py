@@ -41,17 +41,56 @@ def _load_data(infile):
             value_vars=["r1", "r2"],
             var_name="replicate",
             value_name="counts")
-        .sort_values(["Gene", "sgRNA", "replicate"]))
+        .sort_values(["Gene", "Condition", "sgRNA", "replicate"]))
     dat["sgRNA"] = preprocessing.LabelEncoder.fit_transform(dat["sgRNA"].values)
+    dat["counts"] = sp.floor(dat["counts"].values)
     return dat
 
 
-def shm(read_counts):
+def shm(read_counts: pd.DataFrame):
+    n, _ = read_counts.shape
     le = preprocessing.LabelEncoder()
 
     gene_idx = le.fit_transform(read_counts["Gene"].values)
-    len_genes = len(sp.unique(gene_idx))
+    con_idx = le.fit_transform(read_counts["Condition"].values)
 
+    len_genes = len(sp.unique(gene_idx))
+    len_conditions = len(sp.unique(con_idx))
+    len_sirnas = len(sp.unique(read_counts["sgRNA"].values))
+    len_replicates = len(sp.unique(read_counts["replicate"].values))
+    len_sirnas_per_gene = int(len_sirnas / len_genes)
+
+    beta_idx = np.repeat(range(len_genes), len_conditions)
+    beta_data_idx = np.repeat(beta_idx, n / len(beta_idx))
+
+    l_idx = np.repeat(range(len_genes * len_conditions * len_sirnas_per_gene),
+                      len_replicates)
+    l_idx
+
+    with pm.Model() as model:
+        p = pm.Dirichlet('p', a=np.array([1., 1.]), shape=2)
+        _ = pm.Potential('p_pot',
+                                 tt.switch(tt.min(p) < .05, -np.inf, 0))
+        category = pm.Categorical('category', p=p, shape=len_genes)
+
+        tau_g = pm.Gamma('tau_g', 1., 1., shape=1)
+        mean_g = pm.Normal('mu_g', mu=np.array([0, 0]), sd=.5, shape=2)
+        _ = pm.Potential('mop', tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0))
+        gamma = pm.Normal('gamma', mean_g[category], tau_g, shape=len_genes)
+
+        tau_b = pm.Gamma('tau_b', 1., 1., shape=1)
+        if len_conditions == 1:
+            beta = pm.Deterministic('beta', gamma, tau_b, shape=len_genes)
+        else:
+            beta = pm.Normal('beta', gamma[beta_idx], tau_b, shape=len(beta_idx))
+        l = pm.Lognormal('l', 0, .25, shape=len_sirnas)
+
+        pm.Poisson(
+          'x',
+          mu=np.exp(beta[beta_data_idx]) * l[l_idx],
+          observed=sp.squeeze(read_counts["counts"].values))
+
+    return model
 
 
 def flat(read_counts):

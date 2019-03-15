@@ -53,7 +53,7 @@ def shm(read_counts: pd.DataFrame):
     beta_data_idx = np.repeat(beta_idx, int(n / len(beta_idx)))
 
     con = conditions[np.repeat(sp.unique(con_idx), len_genes)]
-    gene_conds = [a + b for a, b in zip(genes[beta_idx], con)]
+    gene_conds = ["{}-{}".format(a, b) for a, b in zip(genes[beta_idx], con)]
 
     l_idx = np.repeat(
       range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates)
@@ -85,15 +85,57 @@ def shm(read_counts: pd.DataFrame):
     return model, genes, gene_conds
 
 
-def flat(read_counts):
-    return 1
+def flat(read_counts: pd.DataFrame):
+    n, _ = read_counts.shape
+    le = LabelEncoder()
+
+    conditions = sp.unique(read_counts["Condition"].values)
+    genes = sp.unique(read_counts["Gene"].values)
+    gene_idx = le.fit_transform(read_counts["Gene"].values)
+    con_idx = le.fit_transform(read_counts["Condition"].values)
+
+    len_genes = len(sp.unique(gene_idx))
+    len_conditions = len(sp.unique(con_idx))
+    len_sirnas = len(sp.unique(read_counts["sgRNA"].values))
+    len_replicates = len(sp.unique(read_counts["replicate"].values))
+    len_sirnas_per_gene = int(len_sirnas / len_genes)
+
+    beta_idx = np.repeat(range(len_genes), len_conditions)
+    beta_data_idx = np.repeat(beta_idx, int(n / len(beta_idx)))
+
+    con = conditions[np.repeat(sp.unique(con_idx), len_genes)]
+    gene_conds = ["{}-{}".format(a, b) for a, b in zip(genes[beta_idx], con)]
+
+    l_idx = np.repeat(
+      range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates)
+
+    with pm.Model() as model:
+        tau_g = pm.Gamma("tau_g", 1.0, 1.0, shape=1)
+        gamma = pm.Normal("gamma", 0, tau_g, shape=len_genes)
+
+        tau_b = pm.Gamma("tau_b", 1.0, 1.0, shape=1)
+        if len_conditions == 1:
+            beta = pm.Deterministic("beta", gamma)
+        else:
+            beta = pm.Normal("beta", gamma[beta_idx], tau_b,
+                             shape=len(beta_idx))
+        l = pm.Lognormal("l", 0, 0.25, shape=len_sirnas)
+
+        pm.Poisson(
+          "x",
+          mu=np.exp(beta[beta_data_idx]) * l[l_idx],
+          observed=sp.squeeze(read_counts["counts"].values),
+        )
+
+    return model, genes, gene_conds
 
 
-def _plot_forest(trace, outfile, fm):
+def _plot_forest(trace, outfile, genes, gene_cond, fm):
     fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
     _[0].spines['left'].set_visible(True)
+    _[0].set_yticklabels(genes)
     _[0].tick_params()
     fig.savefig(outfile + "_forest_gamma." + fm)
 
@@ -101,6 +143,7 @@ def _plot_forest(trace, outfile, fm):
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
     _[0].spines['left'].set_visible(True)
+    _[0].set_yticklabels(gene_cond)
     _[0].tick_params()
     fig.savefig(outfile + "_forest_beta." + fm)
 
@@ -118,19 +161,19 @@ def _plot_trace(trace, outfile, n_tune, genes, fm):
         fig.savefig(outfile + "_trace_gamma_{}_{}.{}".format(i, g, fm))
 
 
-def _plot_rhat(trace, outfile, fm):
-    fig, ax = plot_rhat(trace, "gamma")
+def _plot_rhat(trace, outfile, genes, gene_conds, fm):
+    fig, ax = plot_rhat(trace, "gamma", genes)
     fig.savefig(outfile + "_rhat_gamma." + fm)
-    fig, ax = plot_rhat(trace, "beta")
+    fig, ax = plot_rhat(trace, "beta", gene_conds)
     fig.savefig(outfile + "_rhat_beta." + fm)
     fig, ax = plot_rhat(trace, "category")
     fig.savefig(outfile + "_rhat_category." + fm)
 
 
-def _plot_neff(trace, outfile, fm):
-    fig, ax = plot_neff(trace, "gamma")
+def _plot_neff(trace, outfile, genes, gene_cond, fm):
+    fig, ax = plot_neff(trace, "gamma", genes)
     fig.savefig(outfile + "_neff_gamma." + fm)
-    fig, ax = plot_neff(trace, "beta")
+    fig, ax = plot_neff(trace, "beta", gene_cond)
     fig.savefig(outfile + "_neff_beta." + fm)
     fig, ax = plot_neff(trace, "category")
     fig.savefig(outfile + "_neff_category." + fm)
@@ -147,16 +190,16 @@ def _plot_hist(trace, outfile, n_tune, genes, fm):
         fig.savefig(outfile + "_hist_gamma_{}_{}.{}".format(i, g, fm))
 
 
-def _plot(model, trace, outfile, genes, n_tune, n_sample):
+def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample):
     graph = model_to_graphviz(model)
     graph.render(filename=outfile + ".dot")
 
     for fm in ["pdf", "svg", "eps"]:
-        _plot_forest(trace, outfile, fm)
+        _plot_forest(trace, outfile, genes, gene_conds, fm)
         _plot_trace(trace, outfile, n_tune, genes, fm)
         _plot_hist(trace, outfile, n_tune, genes, fm)
-        _plot_neff(trace, outfile, fm)
-        _plot_rhat(trace, outfile, fm)
+        _plot_neff(trace, outfile, genes, gene_conds, fm)
+        _plot_rhat(trace, outfile, genes, gene_conds, fm)
         _plot_parallel(trace, outfile, n_tune, n_sample, fm)
 
 
@@ -180,7 +223,7 @@ def run(infile, outfile, model_type):
                           discard_tuned_samples=False)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
-    _plot(model, trace, outfile, genes, n_tune, n_sample)
+    _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample)
 
 
 if __name__ == "__main__":

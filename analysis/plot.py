@@ -118,7 +118,7 @@ def plot_rhat(trace, var_name):
 
 
 def _to_df(trace, var_name, idx):
-    n_chains = trace.ntune
+    n_chains = trace.nchains
     samples = trace.get_values(var_name)[:, idx]
     len_per_sample = int(len(samples) / n_chains)
     chains = np.repeat(trace.chains, len_per_sample) + 1
@@ -142,6 +142,7 @@ def plot_trace(trace, var_name, ntune, idx, title):
     plt.annotate("Burn-in", (ntune, 0))
     plt.legend(bbox_to_anchor=(.95, 0.5), loc="center left", frameon=False)
     plt.xlabel("")
+    plt.ylabel("")
     plt.title(title, loc="Left")
 
     return fig, ax
@@ -149,10 +150,10 @@ def plot_trace(trace, var_name, ntune, idx, title):
 
 def plot_hist(trace, var_name, ntune, idx, title):
     fr = _to_df(trace, var_name, idx)
-    fr = fr[["samples", "chain", "idxx"]].pivot(index="idxx", columns="chain")
+    fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
 
-    fig, ax = plt.subplots(figsize=(5, 2.5), dpi=720)
+    fig, ax = plt.subplots(figsize=(7 , 2.5), dpi=720)
     cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
     ax.hist(fr[ntune:, 0], 50, color=cols[0], label="1", alpha=.75)
     ax.hist(fr[ntune:, 1], 50, color=cols[1], label="2", alpha=.75)
@@ -163,6 +164,7 @@ def plot_hist(trace, var_name, ntune, idx, title):
                      loc="center left", frameon=False)
     leg._legend_box.align = "left"
     plt.xlabel("")
+    plt.ylabel("")
     plt.title(title, loc="Left")
 
     return fig, ax
@@ -184,11 +186,11 @@ def plot_parallel(trace, ntune, nsample):
     var_names = [var.replace("\n", " ") for var in var_names]
 
     n_all = ntune + nsample
-    rng = list(range(ntune, n_all))
+    rng = np.array(list(range(ntune, n_all)))
     lens = np.append(np.append(rng, rng + n_all),
                      np.append(rng + n_all * 2, rng + n_all * 3))
     diverging_mask = diverging_mask[lens]
-    _posterior = _posterior[lens]
+    _posterior = _posterior[:, lens]
 
     fig, ax = plt.subplots(figsize=(8, 3), dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)

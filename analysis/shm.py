@@ -9,12 +9,10 @@ import pandas as pd
 import pymc3 as pm
 import scipy as sp
 import theano.tensor as tt
-from matplotlib import pyplot as plt
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 
-from analysis.plot import plot_trace, plot_neff, plot_rhat, plot_parallel, \
-    plot_hist
+from analysis.plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist
 
 warnings.filterwarnings("ignore")
 
@@ -52,12 +50,10 @@ def shm(read_counts: pd.DataFrame):
     len_sirnas_per_gene = int(len_sirnas / len_genes)
 
     beta_idx = np.repeat(range(len_genes), len_conditions)
-    gamma_idx = np.repeat()
     beta_data_idx = np.repeat(beta_idx, int(n / len(beta_idx)))
 
-    gene_conds = [a + b for a, b in zip(genes[beta_idx],
-                                        conditions[np.repeat(range(len_genes),
-                                                             len(conditions))])]
+    con = conditions[np.repeat(sp.unique(con_idx), len_genes)]
+    gene_conds = [a + b for a, b in zip(genes[beta_idx], con)]
 
     l_idx = np.repeat(
       range(len_genes * len_conditions * len_sirnas_per_gene), len_replicates)
@@ -95,18 +91,25 @@ def flat(read_counts):
 
 def _plot_forest(trace, outfile, fm):
     fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
+    _[0].xax
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
+    _[0].spines['left'].set_visible(True)
+    _[0].tick_params()
     fig.savefig(outfile + "_forest_gamma." + fm)
 
     fig, _ = az.plot_forest(trace, var_names="beta", credible_interval=0.95)
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
+    _[0].spines['left'].set_visible(True)
+    _[0].tick_params()
     fig.savefig(outfile + "_forest_beta." + fm)
 
     fig, _ = az.plot_forest(trace, var_names="category", credible_interval=0.95)
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
+    _[0].spines['left'].set_visible(True)
+    _[0].tick_params()
     fig.savefig(outfile + "_forest_category." + fm)
 
 
@@ -143,6 +146,7 @@ def _plot_hist(trace, outfile, n_tune, genes, fm):
     for i, g in enumerate(genes):
         fig, _ = plot_hist(trace, "gamma", n_tune, i, g)
         fig.savefig(outfile + "_hist_gamma_{}_{}.{}".format(i, g, fm))
+
 
 def _plot(model, trace, outfile, genes, n_tune, n_sample):
     graph = model_to_graphviz(model)

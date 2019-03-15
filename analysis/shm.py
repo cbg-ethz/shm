@@ -12,7 +12,7 @@ import theano.tensor as tt
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 
-from analysis.plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist
+from plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist
 
 warnings.filterwarnings("ignore")
 
@@ -214,7 +214,7 @@ def run(infile, outfile, model_type):
     if model_type == models[0]:
         model, genes, gene_conds = shm(read_counts)
     else:
-        model = flat(read_counts)
+        model,  genes, gene_conds = flat(read_counts)
 
     n_sample, n_tune, n_init = 100, 50, 100
     with model:

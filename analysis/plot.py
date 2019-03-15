@@ -170,7 +170,7 @@ def plot_parallel(trace, ntune, nsample):
     diverging_mask = diverging_mask[lens]
     _posterior = _posterior[:, lens]
 
-    fig, ax = plt.subplots(figsize=(8, 3), dpi=720)
+    fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)
 
     if np.any(diverging_mask):
@@ -183,5 +183,5 @@ def plot_parallel(trace, ntune, nsample):
     if np.any(diverging_mask):
         ax.plot([], color="darkred", label="divergent")
     ax.legend(frameon=False)
-
+    plt.tight_layout()
     return fig, ax

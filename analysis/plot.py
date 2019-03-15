@@ -21,7 +21,7 @@ sns.set_style(
 
 
 def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel):
-    fig, ax = plt.subplots(figsize=(8, 5), dpi=720)
+    fig, ax = plt.subplots(figsize=(8, 3), dpi=720)
 
     plt.axvline(x=boundary[0], color="grey", linestyle="--")
     plt.axvline(x=boundary[1], color="grey", linestyle="--")
@@ -77,9 +77,8 @@ def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel):
     plt.title(title)
     plt.legend(bbox_to_anchor=(1.04, 0.5), loc="center left", frameon=False)
     plt.xlabel(xlabel)
-    plt.ylabel("Parameters")
-    plt.yticks([])
-
+    plt.ylabel("")
+    plt.yticks()
     return fig, ax
 
 
@@ -134,7 +133,7 @@ def _to_df(trace, var_name, idx):
 def plot_trace(trace, var_name, ntune, idx, title):
     frame = _to_df(trace, var_name, idx)
 
-    fig, ax = plt.subplots(figsize=(5, 2.5), dpi=720)
+    fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
     sns.lineplot(x="idxx", y="sample", data=frame, hue='Chain',
                  palette=sns.cubehelix_palette(4, start=.5, rot=-.75))
 

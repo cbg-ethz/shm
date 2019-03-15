@@ -91,7 +91,6 @@ def flat(read_counts):
 
 def _plot_forest(trace, outfile, fm):
     fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
-    _[0].xax
     _[0].set_title('')
     _[0].set_title('95% credible intervals', size=15, loc="left")
     _[0].spines['left'].set_visible(True)

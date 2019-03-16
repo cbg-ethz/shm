@@ -115,7 +115,6 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
             print("Error with parallel plot")
 
 
-
 models = {
     "shm": shm,
     "shm_independent_l": shm_independent_l,

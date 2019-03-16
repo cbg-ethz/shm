@@ -109,7 +109,11 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
         _plot_hist(trace, outfile, n_tune, genes, fm)
         _plot_neff(trace, outfile, genes, gene_conds, fm)
         _plot_rhat(trace, outfile, genes, gene_conds, fm)
-        _plot_parallel(trace, outfile, n_tune, n_sample, fm)
+        try:
+            _plot_parallel(trace, outfile, n_tune, n_sample, fm)
+        except Exception:
+            print("Error with parallel plot")
+
 
 
 models = {

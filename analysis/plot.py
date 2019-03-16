@@ -164,9 +164,8 @@ def plot_parallel(trace, ntune, nsample):
     var_names = [var.replace("\n", " ") for var in var_names]
 
     n_all = ntune + nsample
-    rng = np.array(list(range(ntune, n_all)))
-    diverging_mask = diverging_mask[rng]
-    _posterior = _posterior[:, rng]
+    diverging_mask = diverging_mask[ntune:]
+    _posterior = _posterior[:, ntune]
 
     fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)

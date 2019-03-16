@@ -12,8 +12,8 @@ from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
 from plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist
-from models import shm, shm_indendent_l
-from models import shm_no_clustering, shm_no_clustering_indendent_l
+from models import shm, shm_independent_l
+from models import shm_no_clustering, shm_no_clustering_independent_l
 
 
 warnings.filterwarnings("ignore")
@@ -51,7 +51,7 @@ def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
     _[0].tick_params()
     fig.savefig(outfile + "_forest_beta." + fm)
 
-    if model != "flat":
+    if model == "shm" or model == "shm_independent_l":
         fig, _ = az.plot_forest(trace, var_names="category",
                                 credible_interval=0.95)
         _[0].set_title('')
@@ -111,11 +111,12 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
         _plot_rhat(trace, outfile, genes, gene_conds, fm)
         _plot_parallel(trace, outfile, n_tune, n_sample, fm)
 
+
 models = {
     "shm": shm,
-    "shm_indendent_l": shm_indendent_l,
+    "shm_independent_l": shm_independent_l,
     "shm_no_clustering": shm_no_clustering,
-    "shm_no_clustering_indendent_l": shm_no_clustering_indendent_l
+    "shm_no_clustering_independent_l": shm_no_clustering_independent_l
 }
 
 
@@ -123,9 +124,9 @@ models = {
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
 @click.option("--model-type", type=click.Choice(models.keys()), default="shm")
-@click.option("--ntune", type=int, default=5000)
-@click.option("--nsample", type=int, default=10000)
-@click.option("--ninit", type=int, default=100000)
+@click.option("--ntune", type=int, default=50)
+@click.option("--nsample", type=int, default=100)
+@click.option("--ninit", type=int, default=1000)
 def run(infile, outfile, model_type, ntune, nsample, ninit):
 
     read_counts = _load_data(infile)

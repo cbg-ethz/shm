@@ -56,7 +56,7 @@ def shm(read_counts: pd.DataFrame):
     return model, genes, gene_conds
 
 
-def shm_indendent_l(read_counts: pd.DataFrame):
+def shm_independent_l(read_counts: pd.DataFrame):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
@@ -146,7 +146,7 @@ def shm_no_clustering(read_counts: pd.DataFrame):
     return model, genes, gene_conds
 
 
-def shm_no_clustering_indendent_l(read_counts: pd.DataFrame):
+def shm_no_clustering_independent_l(read_counts: pd.DataFrame):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
@@ -174,7 +174,7 @@ def shm_no_clustering_indendent_l(read_counts: pd.DataFrame):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
-            l = pm.Lognormal("l", 0, 0.25, shape=n)
+        l = pm.Lognormal("l", 0, 0.25, shape=n)
 
         pm.Poisson(
           "x",

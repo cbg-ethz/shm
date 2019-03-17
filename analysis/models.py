@@ -164,7 +164,6 @@ def shm_no_clustering(read_counts: pd.DataFrame, normalize):
               mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
               observed=sp.squeeze(read_counts["counts"].values))
 
-
     return model, genes, gene_conds
 
 

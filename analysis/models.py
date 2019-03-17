@@ -45,11 +45,12 @@ def shm(read_counts: pd.DataFrame, normalize):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
+
         if normalize:
             l = pm.Normal("l", 0, 0.25, shape=len_sirnas)
-            pm.Poisson(
+            pm.Normal(
               "x",
-              mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
+              mu= beta[beta_data_idx] + l[l_idx],
               observed=sp.squeeze(read_counts["counts"].values),
             )
         else:
@@ -57,8 +58,7 @@ def shm(read_counts: pd.DataFrame, normalize):
             pm.Poisson(
               "x",
               mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
-              observed=sp.squeeze(read_counts["counts"].values),
-            )
+              observed=sp.squeeze(read_counts["counts"].values))
 
     return model, genes, gene_conds
 
@@ -97,13 +97,20 @@ def shm_independent_l(read_counts: pd.DataFrame, normalize):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
-        l = pm.Lognormal("l", 0, 0.25, shape=n)
 
-        pm.Poisson(
-          "x",
-          mu=sp.exp(beta[beta_data_idx]) * l,
-          observed=sp.squeeze(read_counts["counts"].values),
-        )
+        if normalize:
+            l = pm.Normal("l", 0, 0.25, shape=n)
+            pm.Normal(
+              "x",
+              mu= beta[beta_data_idx] + l,
+              observed=sp.squeeze(read_counts["counts"].values),
+            )
+        else:
+            l = pm.Lognormal("l", 0, 0.25, shape=n)
+            pm.Poisson(
+              "x",
+              mu=sp.exp(beta[beta_data_idx]) * l,
+              observed=sp.squeeze(read_counts["counts"].values))
 
     return model, genes, gene_conds
 
@@ -142,13 +149,21 @@ def shm_no_clustering(read_counts: pd.DataFrame, normalize):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
-        l = pm.Lognormal("l", 0, 0.25, shape=len_sirnas)
 
-        pm.Poisson(
-          "x",
-          mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
-          observed=sp.squeeze(read_counts["counts"].values),
-        )
+        if normalize:
+            l = pm.Normal("l", 0, 0.25, shape=len_sirnas)
+            pm.Normal(
+              "x",
+              mu= beta[beta_data_idx] + l[l_idx],
+              observed=sp.squeeze(read_counts["counts"].values),
+            )
+        else:
+            l = pm.Lognormal("l", 0, 0.25, shape=len_sirnas)
+            pm.Poisson(
+              "x",
+              mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
+              observed=sp.squeeze(read_counts["counts"].values))
+
 
     return model, genes, gene_conds
 
@@ -181,12 +196,19 @@ def shm_no_clustering_independent_l(read_counts: pd.DataFrame, normalize):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
-        l = pm.Lognormal("l", 0, 0.25, shape=n)
 
-        pm.Poisson(
-          "x",
-          mu=sp.exp(beta[beta_data_idx]) * l,
-          observed=sp.squeeze(read_counts["counts"].values),
-        )
+        if normalize:
+            l = pm.Normal("l", 0, 0.25, shape=n)
+            pm.Normal(
+              "x",
+              mu= beta[beta_data_idx] + l,
+              observed=sp.squeeze(read_counts["counts"].values),
+            )
+        else:
+            l = pm.Lognormal("l", 0, 0.25, shape=n)
+            pm.Poisson(
+              "x",
+              mu=sp.exp(beta[beta_data_idx]) * l,
+              observed=sp.squeeze(read_counts["counts"].values))
 
     return model, genes, gene_conds

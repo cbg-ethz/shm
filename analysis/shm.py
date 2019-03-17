@@ -132,13 +132,16 @@ models = {
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
 @click.option('--normalize', '-n', is_flag=True)
+@click.option('--filter', '-f', is_flag=True)
 @click.option("--model-type", type=click.Choice(models.keys()), default="shm")
 @click.option("--ntune", type=int, default=50)
 @click.option("--nsample", type=int, default=100)
 @click.option("--ninit", type=int, default=1000)
-def run(infile, outfile, normalize, model_type, ntune, nsample, ninit):
+def run(infile, outfile, normalize, filter, model_type, ntune, nsample, ninit):
 
     read_counts = _load_data(infile, normalize)
+    if filter:
+        read_counts = read_counts.query("Gene == 'BCR' | Gene == 'PSMB1'")
     model, genes, gene_conds = models[model_type](read_counts, normalize)
 
     with model:

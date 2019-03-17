@@ -19,8 +19,12 @@ from models import shm_no_clustering, shm_no_clustering_independent_l
 warnings.filterwarnings("ignore")
 
 
-def _load_data(infile):
+def _load_data(infile, normalize):
     dat = pd.read_csv(infile, sep="\t")
+    if normalize:
+        dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
+        dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
+        dat["r2"] = sp.log(dat["r2"].values / dat["cm"].values)
     dat = (dat[["Condition", "Gene", "sgRNA", "r1", "r2"]]
            .query("Gene != 'Control'")
            .melt(id_vars=["Gene", "Condition", "sgRNA"],
@@ -30,7 +34,8 @@ def _load_data(infile):
            .sort_values(["Gene", "Condition", "sgRNA", "replicate"])
            )
     dat["sgRNA"] = LabelEncoder().fit_transform(dat["sgRNA"].values)
-    dat["counts"] = sp.floor(dat["counts"].values)
+    if not normalize:
+        dat["counts"] = sp.floor(dat["counts"].values)
     return dat
 
 
@@ -126,14 +131,15 @@ models = {
 @click.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
+@click.option('--normalize', '-n', is_flag=True)
 @click.option("--model-type", type=click.Choice(models.keys()), default="shm")
 @click.option("--ntune", type=int, default=50)
 @click.option("--nsample", type=int, default=100)
 @click.option("--ninit", type=int, default=1000)
-def run(infile, outfile, model_type, ntune, nsample, ninit):
+def run(infile, outfile, normalize, model_type, ntune, nsample, ninit):
 
-    read_counts = _load_data(infile)
-    model, genes, gene_conds = models[model_type](read_counts)
+    read_counts = _load_data(infile, normalize)
+    model, genes, gene_conds = models[model_type](read_counts, normalize)
 
     with model:
         trace = pm.sample(nsample, tune=ntune, init="advi", n_init=ninit,

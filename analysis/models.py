@@ -5,7 +5,7 @@ import theano.tensor as tt
 from sklearn.preprocessing import LabelEncoder
 
 
-def shm(read_counts: pd.DataFrame):
+def shm(read_counts: pd.DataFrame, normalize):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
@@ -45,18 +45,25 @@ def shm(read_counts: pd.DataFrame):
         else:
             beta = pm.Normal("beta", gamma[beta_idx], tau_b,
                              shape=len(beta_idx))
-        l = pm.Lognormal("l", 0, 0.25, shape=len_sirnas)
-
-        pm.Poisson(
-          "x",
-          mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
-          observed=sp.squeeze(read_counts["counts"].values),
-        )
+        if normalize:
+            l = pm.Normal("l", 0, 0.25, shape=len_sirnas)
+            pm.Poisson(
+              "x",
+              mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
+              observed=sp.squeeze(read_counts["counts"].values),
+            )
+        else:
+            l = pm.Lognormal("l", 0, 0.25, shape=len_sirnas)
+            pm.Poisson(
+              "x",
+              mu=sp.exp(beta[beta_data_idx]) * l[l_idx],
+              observed=sp.squeeze(read_counts["counts"].values),
+            )
 
     return model, genes, gene_conds
 
 
-def shm_independent_l(read_counts: pd.DataFrame):
+def shm_independent_l(read_counts: pd.DataFrame, normalize):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
@@ -101,7 +108,7 @@ def shm_independent_l(read_counts: pd.DataFrame):
     return model, genes, gene_conds
 
 
-def shm_no_clustering(read_counts: pd.DataFrame):
+def shm_no_clustering(read_counts: pd.DataFrame, normalize):
     n, _ = read_counts.shape
     le = LabelEncoder()
 
@@ -146,7 +153,7 @@ def shm_no_clustering(read_counts: pd.DataFrame):
     return model, genes, gene_conds
 
 
-def shm_no_clustering_independent_l(read_counts: pd.DataFrame):
+def shm_no_clustering_independent_l(read_counts: pd.DataFrame, normalize):
     n, _ = read_counts.shape
     le = LabelEncoder()
 

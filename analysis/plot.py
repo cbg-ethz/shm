@@ -108,15 +108,15 @@ def _to_df(trace, var_name, idx):
     return frame
 
 
-def plot_trace(trace, var_name, ntune, idx, title):
+def plot_trace(trace, var_name, ntune, keep_burnin, idx, title):
     frame = _to_df(trace, var_name, idx)
 
     fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
     sns.lineplot(x="idxx", y="sample", data=frame, hue='Chain',
                  palette=sns.cubehelix_palette(4, start=.5, rot=-.75))
-
-    plt.axvline(ntune, linestyle='--', linewidth=.5, color="grey")
-    plt.annotate("Burn-in", (ntune, 0))
+    if keep_burnin:
+        plt.axvline(ntune, linestyle='--', linewidth=.5, color="grey")
+        plt.annotate("Burn-in", (ntune, 0))
     plt.legend(title='Chain', bbox_to_anchor=(.95, 0.5), loc="center left",
                frameon=False, labels=['1', '2', '3', '4'])
     plt.xlabel("")
@@ -126,13 +126,15 @@ def plot_trace(trace, var_name, ntune, idx, title):
     return fig, ax
 
 
-def plot_hist(trace, var_name, ntune, idx, title):
+def plot_hist(trace, var_name, ntune, keep_burnin, idx, title):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
 
     fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
     cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
+    if not keep_burnin:
+        ntune = 0
     ax.hist(fr[ntune:, 0], 50, color=cols[0], label="1", alpha=.75)
     ax.hist(fr[ntune:, 1], 50, color=cols[1], label="2", alpha=.75)
     ax.hist(fr[ntune:, 2], 50, color=cols[2], label="3", alpha=.75)
@@ -159,13 +161,15 @@ def _extract(trace):
     return diverging_mask, var_names, _posterior
 
 
-def plot_parallel(trace, ntune, nsample):
+def plot_parallel(trace, ntune, nsample, keep_burnin):
     diverging_mask, var_names, _posterior = _extract(trace)
     var_names = [var.replace("\n", " ") for var in var_names]
 
-    n_all = ntune + nsample
-    diverging_mask = diverging_mask[ntune:]
-    _posterior = _posterior[:, ntune:]
+    if not keep_burnin:
+        ntune = 0
+    n_all = ntune + np.max(100, nsample)
+    diverging_mask = diverging_mask[ntune:n_all]
+    _posterior = _posterior[:, ntune:n_all]
 
     fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)

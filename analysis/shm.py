@@ -67,9 +67,9 @@ def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
     plt.close('all')
 
 
-def _plot_trace(trace, outfile, n_tune, genes, fm):
+def _plot_trace(trace, outfile, n_tune, keep_burnin, genes, fm):
     for i, g in enumerate(genes):
-        fig, _ = plot_trace(trace, "gamma", n_tune, i, g)
+        fig, _ = plot_trace(trace, "gamma", n_tune, keep_burnin, i, g)
         fig.savefig(outfile + "_trace_gamma_{}_{}.{}".format(i, g, fm))
     plt.close('all')
 
@@ -90,34 +90,34 @@ def _plot_neff(trace, outfile, genes, gene_cond, fm):
     plt.close('all')
 
 
-def _plot_parallel(trace, outfile, ntune, nsample, fm):
-    fig, ax = plot_parallel(trace, ntune, nsample)
+def _plot_parallel(trace, outfile, ntune, nsample, keep_burnin, fm):
+    fig, ax = plot_parallel(trace, ntune, nsample, keep_burnin)
     fig.savefig(outfile + "_parallel." + fm)
     plt.close('all')
 
 
-def _plot_hist(trace, outfile, n_tune, genes, fm):
+def _plot_hist(trace, outfile, n_tune, keep_burnin, genes, fm):
     for i, g in enumerate(genes):
-        fig, _ = plot_hist(trace, "gamma", n_tune, i, g)
+        fig, _ = plot_hist(trace, "gamma", n_tune, keep_burnin, i, g)
         fig.savefig(outfile + "_hist_gamma_{}_{}.{}".format(i, g, fm))
     plt.close('all')
 
 
 def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
-          model_name):
+          model_name, keep_burnin):
     graph = model_to_graphviz(model)
     graph.render(filename=outfile + ".dot")
 
     for fm in ["pdf", "svg", "eps"]:
         _plot_forest(trace, outfile, genes, gene_conds, fm, model_name)
-        _plot_trace(trace, outfile, n_tune, genes, fm)
-        _plot_hist(trace, outfile, n_tune, genes, fm)
+        _plot_trace(trace, outfile, n_tune, keep_burnin, genes, fm)
+        _plot_hist(trace, outfile, n_tune, keep_burnin,  genes, fm)
         _plot_neff(trace, outfile, genes, gene_conds, fm)
         _plot_rhat(trace, outfile, genes, gene_conds, fm)
         try:
-            _plot_parallel(trace, outfile, n_tune, n_sample, fm)
+            _plot_parallel(trace, outfile, n_tune, n_sample, keep_burnin, fm)
         except Exception:
-            print("Error with parallel plot")
+            print("Error with some plot")
 
 
 models = {
@@ -132,12 +132,14 @@ models = {
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
 @click.option('--normalize', '-n', is_flag=True)
+@click.option('--keep-burnin', '-k', is_flag=True)
 @click.option('--filter', '-f', is_flag=True)
 @click.option("--model-type", type=click.Choice(models.keys()), default="shm")
 @click.option("--ntune", type=int, default=50)
 @click.option("--nsample", type=int, default=100)
 @click.option("--ninit", type=int, default=1000)
-def run(infile, outfile, normalize, filter, model_type, ntune, nsample, ninit):
+def run(infile, outfile, normalize, keep_burnin, filter,
+        model_type, ntune, nsample, ninit):
 
     read_counts = _load_data(infile, normalize)
     if filter:
@@ -147,10 +149,11 @@ def run(infile, outfile, normalize, filter, model_type, ntune, nsample, ninit):
     with model:
         trace = pm.sample(nsample, tune=ntune, init="advi", n_init=ninit,
                           chains=4, random_seed=42,
-                          discard_tuned_samples=False)
+                          discard_tuned_samples=not keep_burnin)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
-    _plot(model, trace, outfile, genes, gene_conds, ntune, nsample, model_type)
+    _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
+          model_type, keep_burnin)
 
 
 if __name__ == "__main__":

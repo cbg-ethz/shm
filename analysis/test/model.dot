@@ -1,0 +1,18 @@
+digraph {
+	tau_b [label="tau_b ~ Gamma"]
+	tau_g [label="tau_g ~ Gamma"]
+	subgraph cluster2 {
+		gamma [label="gamma ~ Normal"]
+		beta [label="beta ~ Deterministic" shape=box]
+		label=2 labeljust=r labelloc=b style=rounded
+	}
+	subgraph cluster40 {
+		l [label="l ~ Normal"]
+		x [label="x ~ Normal" style=filled]
+		label=40 labeljust=r labelloc=b style=rounded
+	}
+	tau_g -> gamma
+	gamma -> beta
+	l -> x
+	beta -> x
+}

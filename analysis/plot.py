@@ -150,14 +150,46 @@ def plot_hist(trace, var_name, ntune, keep_burnin, idx, title):
     return fig, ax
 
 
+def _var_names(var_names, data):
+    """Handle var_names input across arviz.
+    Parameters
+    ----------
+    var_names: str, list, or None
+    data : xarray.Dataset
+        Posterior data in an xarray
+    Returns
+    -------
+    var_name: list or None
+    """
+    if var_names is not None:
+
+        if isinstance(var_names, str):
+            var_names = [var_names]
+        if isinstance(data, (list, tuple)):
+            all_vars = []
+            for dataset in data:
+                dataset_vars = list(dataset.data_vars)
+                for var in dataset_vars:
+                    if var not in all_vars:
+                        all_vars.append(var)
+        else:
+            all_vars = list(data.data_vars)
+        excluded_vars = [i[1:] for i in var_names if i.startswith("~") and i not in all_vars]
+        if excluded_vars:
+            var_names = [i for i in all_vars if i not in excluded_vars]
+    return var_names
+
+
 def _extract(trace):
     divergent_data = convert_to_dataset(trace, group="sample_stats")
     _, diverging_mask = xarray_to_ndarray(
       divergent_data, var_names=("diverging",), combined=True)
     diverging_mask = np.squeeze(diverging_mask)
+
     posterior_data = convert_to_dataset(trace, group="posterior")
+    var_names = _var_names(["beta", "gamma", "tau_b", "tau_g"], posterior_data)
     var_names, _posterior = xarray_to_ndarray(
-      get_coords(posterior_data, {}), var_names=None, combined=True)
+      get_coords(posterior_data, {}), var_names=var_names, combined=True)
     return diverging_mask, var_names, _posterior
 
 
@@ -167,15 +199,15 @@ def plot_parallel(trace, ntune, nsample, keep_burnin):
 
     if not keep_burnin:
         ntune = 0
-    n_all = ntune + np.max(100, nsample)
-    diverging_mask = diverging_mask[ntune:n_all]
-    _posterior = _posterior[:, ntune:n_all]
+    n_all = ntune + np.maximum(100, nsample) - 1
+    diverging_mask = diverging_mask[ntune:]
+    _posterior = _posterior[:, ntune:]
 
     fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
-    ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025)
+    ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025, lw=.25)
 
     if np.any(diverging_mask):
-        ax.plot(_posterior[:, diverging_mask], color="darkred", lw=1)
+        ax.plot(_posterior[:, diverging_mask], color="darkred", lw=.25)
 
     ax.set_xticks(range(len(var_names)))
     ax.set_xticklabels(var_names)
@@ -185,4 +217,34 @@ def plot_parallel(trace, ntune, nsample, keep_burnin):
         ax.plot([], color="darkred", label="divergent")
     ax.legend(frameon=False)
     plt.tight_layout()
+    return fig, ax
+
+
+def plot_data(read_counts):
+    fig, ax = plt.subplots(figsize=(7, 4))
+    plt.hist(read_counts["counts"].values, bins=200, color="darkgrey",
+             density=True, edgecolor='black')
+    ax.set_xlim([-.5, .5])
+    ax.set_xlabel(r"Log fold-change")
+    ax.set_ylabel(r"Density")
+    ax.xaxis.set_label_coords(.95, -0.115)
+    ax.yaxis.set_label_coords(-0.075, .95)
+
+    return fig, ax
+
+
+def plot_posterior(readcounts ,ppc_trace):
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.hist(readcounts["counts"].values, bins=200, lw=2,
+            density=True, edgecolor='black', histtype='step', label='Data')
+    ax.hist(ppc_trace['x'], bins=200, density=True, lw=2,
+            histtype='step', label='Posterior predictive distribution');
+    ax.set_xlim([-.5, .5])
+    ax.set_xlabel(r"Log fold-change")
+    ax.set_ylabel(r"Density")
+    ax.xaxis.set_label_coords(.95, -0.115)
+    ax.yaxis.set_label_coords(-0.075, .95)
+    ax.set_xlim([-.5, .5])
+    ax.legend(frameon=False)
+
     return fig, ax

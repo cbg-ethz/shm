@@ -11,7 +11,7 @@ import scipy as sp
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
-from plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist
+from plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist, plot_data, plot_posterior
 from models import shm, shm_independent_l
 from models import shm_no_clustering, shm_no_clustering_independent_l
 
@@ -22,6 +22,7 @@ warnings.filterwarnings("ignore")
 def _load_data(infile, normalize):
     dat = pd.read_csv(infile, sep="\t")
     if normalize:
+        print("Taking log-fold change")
         dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
         dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
         dat["r2"] = sp.log(dat["r2"].values / dat["cm"].values)
@@ -31,8 +32,7 @@ def _load_data(infile, normalize):
                  value_vars=["r1", "r2"],
                  var_name="replicate",
                  value_name="counts")
-           .sort_values(["Gene", "Condition", "sgRNA", "replicate"])
-           )
+           .sort_values(["Gene", "Condition", "sgRNA", "replicate"]))
     dat["sgRNA"] = LabelEncoder().fit_transform(dat["sgRNA"].values)
     if not normalize:
         dat["counts"] = sp.floor(dat["counts"].values)
@@ -103,12 +103,29 @@ def _plot_hist(trace, outfile, n_tune, keep_burnin, genes, fm):
     plt.close('all')
 
 
+def _plot_data(data, outfile, fm):
+    fig, ax = plot_data(data)
+    fig.savefig(outfile + "_data)histogram." + fm)
+    plt.close('all')
+
+
+def _plot_posterior(data, ppc, outfile, fm):
+    fig, ax = plot_posterior(data, ppc)
+    fig.savefig(outfile + "_data)histogram." + fm)
+    plt.close('all')
+
+
 def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
-          model_name, keep_burnin):
+          model_name, keep_burnin, data):
     graph = model_to_graphviz(model)
     graph.render(filename=outfile + ".dot")
 
+    with model:
+        ppc = pm.sample_posterior_predictive(trace, 5000, random_seed=23)
+
     for fm in ["pdf", "svg", "eps"]:
+        _plot_data(data, outfile, fm)
+        _plot_posterior(data, ppc, outfile, fm)
         _plot_forest(trace, outfile, genes, gene_conds, fm, model_name)
         _plot_trace(trace, outfile, n_tune, keep_burnin, genes, fm)
         _plot_hist(trace, outfile, n_tune, keep_burnin,  genes, fm)
@@ -116,8 +133,8 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
         _plot_rhat(trace, outfile, genes, gene_conds, fm)
         try:
             _plot_parallel(trace, outfile, n_tune, n_sample, keep_burnin, fm)
-        except Exception:
-            print("Error with some plot")
+        except Exception as e:
+            print("Error with some plot: {}\n".format(str(e)))
 
 
 models = {
@@ -143,9 +160,12 @@ def run(infile, outfile, normalize, keep_burnin, filter,
 
     read_counts = _load_data(infile, normalize)
     if filter:
+        print("Filtering by genes")
         read_counts = read_counts.query("Gene == 'BCR' | Gene == 'PSMB1'")
     model, genes, gene_conds = models[model_type](read_counts, normalize)
 
+    if not keep_burnin:
+        print("Removing burning")
     with model:
         trace = pm.sample(nsample, tune=ntune, init="advi", n_init=ninit,
                           chains=4, random_seed=42,
@@ -153,7 +173,7 @@ def run(infile, outfile, normalize, keep_burnin, filter,
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
     _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
-          model_type, keep_burnin)
+          model_type, keep_burnin, read_counts)
 
 
 if __name__ == "__main__":

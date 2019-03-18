@@ -105,13 +105,13 @@ def _plot_hist(trace, outfile, n_tune, keep_burnin, genes, fm):
 
 def _plot_data(data, outfile, fm):
     fig, ax = plot_data(data)
-    fig.savefig(outfile + "_data)histogram." + fm)
+    fig.savefig(outfile + "_data_histogram." + fm)
     plt.close('all')
 
 
 def _plot_posterior(data, ppc, outfile, fm):
     fig, ax = plot_posterior(data, ppc)
-    fig.savefig(outfile + "_data)histogram." + fm)
+    fig.savefig(outfile + "_data_ppc_histogram." + fm)
     plt.close('all')
 
 

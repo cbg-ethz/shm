@@ -48,8 +48,8 @@ def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel, x
     plt.title(title, loc="Left")
     plt.legend(bbox_to_anchor=(1.0, 0.5), loc="center left", frameon=False)
     plt.xlabel(xlabel)
-    plt.ylabel("")
-    plt.tick_params(axis='y', labelsize=5)
+    plt.ylabel("Parameters")
+    plt.tick_params(axis=None)
     plt.xlim(left=xlim)
     plt.tight_layout()
     return fig, ax

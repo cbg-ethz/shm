@@ -18,20 +18,57 @@
 \begin{figure}
 	\centering
 	\begin{tikzpicture}
-	\node[obs] (x) {$x$};
-	\node[latent, above right = of x] (l) {$l$};
-	\node[latent, rectangle, above left = of x] (beta) {$\beta$};
-	\node[latent, above right = of beta] (taub) {$\tau_{b}$};
-	\node[latent, above left = of beta] (gamma) {$\gamma$};
-	\node[latent, above right = of gamma] (taug) {$\tau_g$};
-	\node[latent, above = of gamma] (cat) {$z$};
-	\node[latent, above left = of gamma] (mug) {$\mu_g$};
+	
+	\node[latent, ultra thick] (g1) {$\gamma_{1}$};
+	\node[latent, ultra thick, right =  of g1] (g2) {$\gamma_{2}$};	
+	\node[latent, ultra thick, right = 3.5cm of g2] (g3) {$\gamma_{3}$};
+	\node[latent, ultra thick, right =  of g3] (g4) {$\gamma_{4}$};	
 
-	\plate  {name} {(gamma)(taug)(cat)(mug)} {$G$};
-	\plate  {name} {(gamma)(taug)(cat)(mug)(beta)(taub)} {$C$};
-	\plate  {name} {(gamma)(taug)(cat)(mug)(beta)(taub)(l)(x)} {$S$};
+	\node[latent, ultra thick, above right = of g2] (z2) {$z_{2}$};	
+	\node[latent, ultra thick, above = of z2] (z1) {$z_{1}$};	
+	\node[latent, ultra thick, above left = of g3] (z3) {$z_{3}$};
+	\node[latent, ultra thick, above = of z3] (z4) {$z_{4}$};
 
-	\end{tikzpicture}
+
+	\node[latent,ultra thick, below left=1cm and .5cm of g1] (b11) {$\beta_{1,c_1}$};
+	\node[below right=1cm and .25cm of g1] (b12) {$\dots$};	
+	\node[ below left=1cm and .25cm of g3] (b31) {$\dots$};
+	\node[ below right=1cm and .25cm of g3] (b32) {$\dots$};
+	\node[ below left=1cm and .25cm of g2] (b21) {$\dots$};
+	\node[ below right=1cm and .25cm of g2] (b22) {$\dots$};	
+	\node[ below left=1cm and .25cm of g4] (b41) {$\dots$};
+	\node[ below right=1cm and .25cm of g4] (b42) {$\dots$};
+		
+	\node[obs, ultra thick, below left=1cm and .75cm of b11] (x111) {};
+	\node[obs, ultra thick, below right=1cm and .75cm of b11] (x112) {};
+	\node[below =.05cm of x111,align=center] () {$x_{1,c_1,s_1}$}; 
+	\node[below =.05cm of x112,align=center] () {$x_{1,c_1,s_2}$}; 
+
+	\node[latent, ultra thick, left = of x111] (l1) {$l_{s_1}$};
+	\node[latent, ultra thick, right = of x112] (l2) {$l_{s_2}$};
+
+	\draw [thick] (z1) -- (z2);
+	\draw [thick] (z2) -- (z3);
+	\draw [thick] (z3) -- (z4);
+	\edge [thick] {g1} {b11};
+	\edge [thick] {g1} {b12};
+	\edge [thick] {g2} {b21};
+	\edge [thick] {g2} {b22};
+	\edge [thick] {g3} {b31};
+	\edge [thick] {g3} {b32};
+	\edge [thick] {g4} {b41};
+	\edge [thick] {g4} {b42};
+	\edge [thick] {b11} {x111};
+	\edge [thick] {b11} {x112};
+	\edge [thick] {l1} {x111};
+	\edge [thick] {l2} {x112};
+	\edge [thick] {z1} {g1};
+	\edge [thick] {z2} {g2};
+	\edge [thick] {z3} {g3};
+	\edge [thick] {z4} {g4};
+
+
+\end{tikzpicture}
 
 \end{figure}
 \end{document}

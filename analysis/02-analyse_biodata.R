@@ -44,7 +44,7 @@ cls <- rutil::manual_discrete_colors()
 }
 
 
-.plot.mle <- function(graph, data)
+.plot.mle <- function(graph, data, names=FALSE)
 {
   good.nodes <- data$Idx[which(data$pval < 0.05 & data$hypothesis == 1)]
   bad.nodes <- data$Idx[which(data$pval >= 0.05 & data$hypothesis == 0)]
@@ -61,7 +61,9 @@ cls <- rutil::manual_discrete_colors()
   V(graph)[fns]$color <- "red"
 
   pl1 <- ggraph(graph, layout="kk") +
-    geom_edge_fan(edge_colour='grey', edge_width=.75) +
+    geom_edge_fan(edge_colour='grey', edge_width=.75)
+  if (names)  pl1 <- pl1 + geom_node_text(aes(label=V(graph)$name), repel=TRUE, size=5)
+  pl1 <- pl1 +
     geom_node_point(aes(color=V(graph)$color), size=4) +
     scale_color_manual(values=c(cls[7], "black", "orange", "red"),
                        labels=c("TP", "TN", "FP", "FN"),
@@ -108,6 +110,7 @@ cls <- rutil::manual_discrete_colors()
 
   pl1
 }
+
 
 .plot.posterior <- function(correction)
 {

@@ -11,10 +11,6 @@ import scipy as sp
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
-from plot import plot_trace, plot_neff, plot_rhat, plot_parallel, plot_hist, plot_data, plot_posterior
-from models import shm, shm_independent_l
-from models import shm_no_clustering, shm_no_clustering_independent_l
-
 
 warnings.filterwarnings("ignore")
 

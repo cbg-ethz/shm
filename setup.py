@@ -41,11 +41,12 @@ setup(
   include_package_data=True,
   python_requires='>=3',
   install_requires=[
-      'pymc3',
+      'arviz',
       'matplotlib',
       'numpy',
       'pandas',
-      'arviz',
+      'pymc3',
+      'python-igraph',
       'scipy',
       'seaborn',
       'sklearn'

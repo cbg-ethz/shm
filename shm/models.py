@@ -39,12 +39,11 @@ def shm(read_counts: pd.DataFrame, normalize):
         pm.Potential("m_opot", tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0))
         gamma = pm.Normal("gamma", mean_g[category], tau_g, shape=len_genes)
 
-        tau_b = pm.Gamma("tau_b", 1.0, 1.0, shape=1)
+        tau_b = pm.InverseGamma("tau_b", 2.0, 1.0, shape=1)
         if len_conditions == 1:
             beta = pm.Deterministic("beta", gamma)
         else:
-            beta = pm.Normal("beta", gamma[beta_idx], tau_b,
-                             shape=len(beta_idx))
+            beta = pm.Normal("beta", gamma[beta_idx], tau_b, shape=len(beta_idx))
 
         if normalize:
             l = pm.Normal("l", 0, 0.25, shape=len_sirnas)

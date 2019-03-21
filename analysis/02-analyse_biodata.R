@@ -73,7 +73,7 @@ cls <- rutil::manual_discrete_colors()
           legend.title=element_blank(),
           plot.title = element_text(size=30),
           legend.text=element_text(size=20))  +
-    ggtitle("MLE")
+    ggtitle("")
 
   pl1
 }

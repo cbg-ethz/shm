@@ -1,21 +1,34 @@
 language: python
 
-sudo: false
+sudo: required
+cache: pip
 
-cache: packages
+matrix:
+  include:
+  - python: 3.6
+    os: linux
+    dist: xenial
 
-python:
-  - "3.5"
+env:
+  global:
+    - SPARK_VERSION="2.4.0"
+    - HADOOP_VERSION="2.7"
+    - SPARK_PATH="spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
+    - SPARK_HOME="/tmp/${SPARK_PATH}"
+    - JAVA_VERSION=oraclejdk8
+    - PATH="${PATH}:${SPARK_HOME}/bin"
+
+before_install:
+  - find -name "*\.snakemake*" -type d -exec rm -r "{}" \;
+  - pip install --upgrade pip
+  - curl -s https://raw.githubusercontent.com/dirmeier/spark-travis/master/setup_spark.sh | bash
 
 install:
-  - pip install -r requirements.txt
-  - pip install -e .
+  - pip install -e '.[test]'
   - pip install codecov
   - pip install pytest-cov
+  - pip install tox-travis
 
-script: 
-  - echo simon
-
-after_success:
-  - codecov
-
+script:
+  - spark-submit -h
+  - py.test tests/test_pybda.py

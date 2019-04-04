@@ -9,19 +9,8 @@ matrix:
     os: linux
     dist: xenial
 
-env:
-  global:
-    - SPARK_VERSION="2.4.0"
-    - HADOOP_VERSION="2.7"
-    - SPARK_PATH="spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}"
-    - SPARK_HOME="/tmp/${SPARK_PATH}"
-    - JAVA_VERSION=oraclejdk8
-    - PATH="${PATH}:${SPARK_HOME}/bin"
-
 before_install:
-  - find -name "*\.snakemake*" -type d -exec rm -r "{}" \;
   - pip install --upgrade pip
-  - curl -s https://raw.githubusercontent.com/dirmeier/spark-travis/master/setup_spark.sh | bash
 
 install:
   - pip install -e '.[test]'
@@ -30,5 +19,7 @@ install:
   - pip install tox-travis
 
 script:
-  - spark-submit -h
-  - py.test tests/test_pybda.py
+  - py.test --cov=./shm/ tests/
+
+after_success:
+  - codecov

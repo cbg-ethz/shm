@@ -1,6 +1,8 @@
 ## TODOs
 
-* TODO
+* Add Structure: (Discrete) MRF/Mixture
+* Add GP + Structure
+* Add HM + Structure
 
 ### Author
 

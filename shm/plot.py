@@ -71,7 +71,7 @@ def plot_neff(trace, var_name, variable=None):
 
     return _plot_dotline(eff_samples, boundary, "neff",
                          low, mid, high,
-                         "n_eff / n", "Effective sample size", "n_eff / n",0)
+                         "n_eff / n", "Effective sample size", "n_eff / n", 0)
 
 
 def plot_rhat(trace, var_name, variable=None):

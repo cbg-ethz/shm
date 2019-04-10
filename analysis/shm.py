@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import warnings
 
@@ -11,6 +11,10 @@ import scipy as sp
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
+
+import shm
+from shm.plot import (plot_trace, plot_rhat, plot_neff, plot_parallel,
+                      plot_hist, plot_data, plot_posterior)
 
 warnings.filterwarnings("ignore")
 
@@ -124,7 +128,7 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
         _plot_posterior(data, ppc, outfile, fm)
         _plot_forest(trace, outfile, genes, gene_conds, fm, model_name)
         _plot_trace(trace, outfile, n_tune, keep_burnin, genes, fm)
-        _plot_hist(trace, outfile, n_tune, keep_burnin,  genes, fm)
+        _plot_hist(trace, outfile, n_tune, keep_burnin, genes, fm)
         _plot_neff(trace, outfile, genes, gene_conds, fm)
         _plot_rhat(trace, outfile, genes, gene_conds, fm)
         try:
@@ -134,10 +138,11 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 
 
 models = {
-    "shm": shm,
-    "shm_independent_l": shm_independent_l,
-    "shm_no_clustering": shm_no_clustering,
-    "shm_no_clustering_independent_l": shm_no_clustering_independent_l
+    "shm": shm.models.shm,
+    "shm_independent_l": shm.models.shm_independent_l,
+    "shm_no_clustering": shm.models.shm_no_clustering,
+    "shm_no_clustering_independent_l":
+        shm.models.shm_no_clustering_independent_l
 }
 
 
@@ -153,7 +158,6 @@ models = {
 @click.option("--ninit", type=int, default=1000)
 def run(infile, outfile, normalize, keep_burnin, filter,
         model_type, ntune, nsample, ninit):
-
     read_counts = _load_data(infile, normalize)
     if filter:
         print("Filtering by genes")

@@ -22,7 +22,7 @@ class BinaryMRF(MRF):
             self.__node_labels = node_labels
             self.__adj = G
         self.__n = len(self.__node_labels)
-        self.__binom = scipy.stats.binom.rvs
+        self.__choice = numpy.random.choice
 
     @property
     def n_nodes(self):
@@ -39,13 +39,18 @@ class BinaryMRF(MRF):
 
     def _edge_potential(self, point, idx):
         mb = self._markov_blank(idx)
-        s1 = numpy.sum((point[mb] == point[idx]) * self.__adj[mb, idx])
-        s2 = numpy.sum((point[mb] != point[idx]) * self.__adj[mb, idx])
-        return s1 - s2
+        point_label, blanket_labs = point[idx], point[mb]
+        mb_weights = self.__adj[mb, idx]
+        s1 = numpy.sum((blanket_labs == point_label) * mb_weights)
+        s2 = numpy.sum((blanket_labs != point_label) * mb_weights)
+        # TODO: is point_label * required (llokn up)
+        # i think i can actually leave it out
+        return point_label * (s1 - s2)
 
     def unnormalized_log_prob(self, point):
         eneg = 0
         for idx, l in enumerate(point):
+            # TODO: multiply or not with label here?
             eneg += self._edge_potential(point, idx)
         return eneg
 
@@ -57,6 +62,6 @@ class BinaryMRF(MRF):
 
     def _gibbs(self, idx, point):
         p = scipy.special.expit(self._edge_potential(point, idx))
-        return self.__binom(1, p)
+        return self.__choice([-1, 1], p=[p, 1 - p])
 
 

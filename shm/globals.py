@@ -6,3 +6,5 @@
 CONDITION = "condition"
 GENE = "gene"
 INTERVENTION = "intervention"
+REPLICATE = "replicate"
+READOUT= "readout"

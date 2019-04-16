@@ -46,7 +46,7 @@ setup(
       'numpy',
       'pandas',
       'pymc3',
-      'python-igraph',
+      'networkx',
       'scipy',
       'seaborn',
       'sklearn'

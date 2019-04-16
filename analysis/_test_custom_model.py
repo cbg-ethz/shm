@@ -12,7 +12,8 @@ class MyDistr(Discrete):
         self.mode = 1
 
     def random(self, point=None, size=None):
-        return scipy.stats.bernoulli.rvs(p)
+        print("Sampling")
+        return scipy.stats.bernoulli.rvs(.5)
 
     def logp(self, value):
         print("Only once")
@@ -20,35 +21,45 @@ class MyDistr(Discrete):
 
 
 class MyBinaryMRFSampler(ArrayStep):
-    def __init__(self, vars):
-        pass
+    def __init__(self, var):
+        self.var = var[0]
+        print(var)
 
     def step(self, p):
-        return scipy.stats.bernoulli.rvs(p)
+        print("Stepping")
+        point["ni"] = np.array(self.var.random(point))
+        return point
 
-print("now4")
-n_ = theano.shared(np.asarray([10, 15]))
+
 with pm.Model() as m:
     ni = MyDistr('ni', .5)
     print("now5")
-    p = pm.Uniform('p',0, 1.)
+    ps = pm.Uniform('ps', 0., .5)
+    p = pm.Uniform('p', ps, 1.)
     print("now6")
+
+with m:
     k = pm.Binomial('k', p=p, n=(ni + 1) * 10, observed=4)
     print("no7")
 
+
 print("now1")
 with m:
-    step1 = pm.Metropolis([p])
+    step1 = pm.NUTS([p, ps])
     step2 = MyBinaryMRFSampler([ni])
 
 print("now3")
 point = m.test_point
 print(point)
 
+with m:
+    s = pm.sample(nchains=1, cores=1)
+
+print(type(s))
 print("now2")
 
 for i in range(10):
-    point['ni'] = np.array(step2.step(.5))
+    point = step2.step(point)
     point, _ = step1.step(point)
     print(point)
 

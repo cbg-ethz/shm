@@ -1,14 +1,15 @@
+import numpy
 from abc import ABC
 
 import pandas as pd
+import pymc3
 import scipy as sp
 from sklearn.preprocessing import LabelEncoder
 
 from shm.family import Family
 from shm.globals import INTERVENTION, REPLICATE, GENE, CONDITION
 from shm.link import Link
-from shm.mixture import BinaryMixtureModel
-from shm.mrf.BinaryMRF import BinaryMRF
+from shm.sampler import Sampler
 
 
 class HM(ABC):
@@ -17,8 +18,7 @@ class HM(ABC):
                  independent_interventions=False,
                  family=Family.gaussian,
                  link=Link.identity,
-                 graph=None,
-                 node_labels=None):
+                 sampler=Sampler.NUTS):
 
         self.__data = data
         self.__link = link
@@ -50,17 +50,9 @@ class HM(ABC):
           range(len_genes * len_conditions * len_sirnas_per_gene),
           len_replicates)
 
-        if graph:
-            self.__structure = BinaryMRF(graph, node_labels)
-            self.__do_mrf = True
-        else:
-            self.__structure = BinaryMixtureModel()
-            self.__do_mrf = False
+        self._set_link(link)
+        self._set_sampler(sampler)
 
-
-    @property
-    def do_random_field(self):
-        return self.__do_mrf
 
     @property
     def family(self):
@@ -69,3 +61,19 @@ class HM(ABC):
     @property
     def _beta_idx(self):
         return self.__beta_idx
+
+    def _set_link(self, link: Link):
+        if link == Link.gaussian:
+            setattr(self, link, lambda x: x)
+        elif link == Link.log:
+            setattr(self, link, numpy.exp)
+        else:
+            raise ValueError("Incorrect link function specified")
+
+    def _set_sampler(self, sampler):
+        if sampler == Sampler.NUTS:
+            setattr(self, sampler, pymc3.NUTS)
+        elif sampler == Sampler.Metropolis:
+            setattr(self, sampler, pymc3.Metropolis)
+        else:
+            raise ValueError("Incorect link function specified")

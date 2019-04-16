@@ -4,12 +4,16 @@ import scipy.stats
 
 import networkx
 import numpy
+from pymc3 import Discrete
 
-from shm.mrf.MRF import MRF
+from shm.distributions.MRF import MRF
 
 
-class BinaryMRF(MRF):
-    def __init__(self, G, node_labels=None):
+class BinaryMRF(MRF, Discrete):
+    def __init__(self, G, node_labels=None, *args, **kwargs):
+        super(BinaryMRF, self).__init__(*args, **kwargs)
+        self.mode = None
+
         if isinstance(G, networkx.Graph):
             self.__node_labels = numpy.sort(G.nodes())
             self.__adj = networkx.to_numpy_matrix(
@@ -23,6 +27,7 @@ class BinaryMRF(MRF):
             self.__adj = G
         self.__n = len(self.__node_labels)
         self.__choice = numpy.random.choice
+        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n )
 
     @property
     def n_nodes(self):
@@ -48,20 +53,38 @@ class BinaryMRF(MRF):
         return point_label * (s1 - s2)
 
     def unnormalized_log_prob(self, point):
+        print("I am not needed")
         eneg = 0
         for idx, l in enumerate(point):
             # TODO: multiply or not with label here?
             eneg += self._edge_potential(point, idx)
         return eneg
 
-    def sample(self, point):
+    def random(self, point=None):
+        print("I am never needed")
         next_point = numpy.zeros(self.n_nodes)
+        if not point:
+            point = self.__point
         for idx in range(self.node_labels):
             next_point[idx] = self._gibbs(idx, point)
+        self.__point = next_point
         return next_point
 
     def _gibbs(self, idx, point):
         p = scipy.special.expit(self._edge_potential(point, idx))
         return self.__choice([-1, 1], p=[p, 1 - p])
 
+    def logp(self, value):
+        print("I am never needed other than for testing purposes")
+        return -numpy.inf
 
+    def posterior_sample(self, point, data):
+        # TODO
+        print("that is where i am at")
+        return self.__point
+
+    def _repr_latex_(self, name=None, dist=None):
+        if dist is None:
+            dist = self
+        name = r'\text{%s}' % name
+        return r'${} \sim \text{{BinaryMRF}}(\dots)$'.format(name)

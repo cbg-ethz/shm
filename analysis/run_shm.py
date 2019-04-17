@@ -168,8 +168,7 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--graph", type=str, default=None)
-def run(infile, outfile, family, filter, sampler,
-        model, ntune, ndraw, graph):
+def run(infile, outfile, family, filter, sampler, ntune, ndraw, graph):
 
     read_counts = _load_data(infile, family)
     if filter:

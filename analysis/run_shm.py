@@ -59,10 +59,6 @@ def _read_graph(infile, data):
     data = data[data.id.isin(numpy.sort(G.nodes()))]
     return G, data
 
-
-
-
-
 def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
     fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
     _[0].set_title('')

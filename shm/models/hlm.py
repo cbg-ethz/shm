@@ -13,35 +13,42 @@ from shm.distributions.BinaryMRF import BinaryMRF
 from shm.sampler import Sampler
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class HLM(HM):
     def __init__(self,
                  data: pd.DataFrame,
-                 independent_interventions=False,
                  family=Family.gaussian,
                  link=Link.identity,
                  graph=None,
                  node_labels=None,
                  sampler=Sampler.NUTS):
         super().__init__(data,
-                         independent_interventions,
                          family,
                          link,
+                         graph,
+                         node_labels,
                          sampler)
-        self.__graph = graph
-        self.__node_labels = node_labels
         self._is_set = False
+        self._set()
 
     def __enter__(self):
-        if not self._is_set:
-            self._set_model()
-            self._set_samplers()
-            self._is_set = True
         return self
 
-    def sample(self, n_draw=1000, n_tune=1000, random_seed=23):
+    def __exit__(self):
+        pass
+
+    def _set(self):
+        self._set_model()
+        self._set_samplers()
+        self._is_set = True
+
+    def sample(self, n_draw=1000, n_tune=1000, seed=23):
         # TODO : add diagnostics
         # TODO: return a multitrace
+        np.random.seed(seed)
         trace = NDArray(model=self.__model)
         point = pm.Point(self.__model.test_point, model=self.__model)
         for i in range(n_tune + n_draw):
@@ -51,8 +58,10 @@ class HLM(HM):
 
     def _set_model(self):
         if self.__graph:
+            logger.info("Building mrf hierarchical model")
             self._set_mrf_model()
         else:
+            logger.info("Building cluster hierarchical model")
             self._set_clustering_model()
 
     def _set_mrf_model(self):

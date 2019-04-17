@@ -15,15 +15,17 @@ from shm.sampler import Sampler
 class HM(ABC):
     def __init__(self,
                  data: pd.DataFrame,
-                 independent_interventions=False,
                  family=Family.gaussian,
                  link=Link.identity,
+                 graph=None,
+                 node_labels=None,
                  sampler=Sampler.NUTS):
 
         self.__data = data
         self.__link = link
         self.__family = family
-        self.__independent_interventions = independent_interventions
+        self.__graph = graph
+        self.__node_labels = node_labels
 
         self.__n, _ = data.shape
         le = LabelEncoder()

@@ -25,6 +25,7 @@ class BinaryMRF(MRF, Discrete):
                 raise ValueError("Please provide node labels")
             self.__node_labels = node_labels
             self.__adj = G
+
         self.__n = len(self.__node_labels)
         self.__choice = numpy.random.choice
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n )

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-
+import numpy
 import warnings
 
 import arviz as az
 import click
+import networkx
 import pandas as pd
 import pymc3 as pm
 import scipy as sp
@@ -12,9 +13,14 @@ from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
 from matplotlib import pyplot as plt
 
-import shm
+from shm.family import Family
+from shm.globals import GENE
+from shm.link import Link
+from shm.models.hlm import HLM
 from shm.plot import (plot_trace, plot_rhat, plot_neff, plot_parallel,
-                      plot_hist, plot_data, plot_posterior)
+                      plot_hist, plot_data, plot_posterior
+                      )
+from shm.sampler import Sampler
 
 warnings.filterwarnings("ignore")
 
@@ -37,6 +43,20 @@ def _load_data(infile, family):
     if family != "gaussian":
         dat["counts"] = sp.floor(dat["counts"].values)
     return dat
+
+
+def _read_graph(infile, data):
+    if infile is None:
+        return None, data
+    genes = data[GENE].values
+    G = networkx.read_edgelist(
+      infile,
+      delimiter="\t",
+      data=(('weight', float),),
+      nodetype=str)
+    G = G.subgraph(numpy.sort(genes))
+    data = data[data.id.isin(numpy.sort(G.nodes()))]
+    return G, data
 
 
 def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
@@ -145,25 +165,32 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.option('--filter', '-f', is_flag=True)
 @click.option("--sampler", type=click.Choice(["nuts", "metropolis"]),
               default="metropolis")
-@click.option("--model", type=click.Choice(["mrf", "clustering"]),
-              default="mrf")
-@click.option("--independent_interventions", '-i', is_flag=True)
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
-def run(infile, outfile, family, filter, sampler, model,
-        independent_intervenctions, model_type,
-        ntune, ndraw):
+@click.option("--graph", type=str, default=None)
+def run(infile, outfile, family, filter, sampler,
+        model, ntune, ndraw, graph):
+
     read_counts = _load_data(infile, family)
     if filter:
         print("Filtering by genes")
         read_counts = read_counts.query("Gene == 'BCR' | Gene == 'PSMB1'")
-    model, genes, gene_conds = models[model_type](read_counts, normalize)
 
+    family = Family.gaussian if family == "gaussian" else Family.poisson
+    link = Link.identity if family == "gaussian" else Link.log
+    sampler = Sampler.Metropolis if sampler == "metropolis" else Sampler.NUTS
+    graph, read_counts = _read_graph(graph, read_counts)
 
+    with HLM(data=read_counts,
+             family=family,
+             link=link,
+             sampler=sampler,
+             graph=graph) as model:
+        trace = model.sample(ndraw, ntune, 23)
 
-    pm.save_trace(trace, outfile + "_trace", overwrite=True)
-    _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
-          model_type, keep_burnin, read_counts)
+    # pm.save_trace(trace, outfile + "_trace", overwrite=True)
+    # _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
+    #       model_type, keep_burnin, read_counts)
 
 
 if __name__ == "__main__":

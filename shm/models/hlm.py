@@ -70,8 +70,8 @@ class HLM(HM):
                 beta = pm.Deterministic("beta", var=gamma)
             else:
                 beta = pm.Normal("beta",
-                  mu=gamma[self.beta_idx], sd=tau_b,
-                  shape=len(self._beta_idx))
+                                 mu=gamma[self.beta_idx], sd=tau_b,
+                                 shape=len(self._beta_idx))
 
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=0.25, shape=self.n_interventions)

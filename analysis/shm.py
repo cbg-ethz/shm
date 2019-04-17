@@ -19,9 +19,9 @@ from shm.plot import (plot_trace, plot_rhat, plot_neff, plot_parallel,
 warnings.filterwarnings("ignore")
 
 
-def _load_data(infile, normalize):
+def _load_data(infile, family):
     dat = pd.read_csv(infile, sep="\t")
-    if normalize:
+    if family == "gaussian":
         print("Taking log-fold change")
         dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
         dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
@@ -34,7 +34,7 @@ def _load_data(infile, normalize):
                  value_name="counts")
            .sort_values(["Gene", "Condition", "sgRNA", "replicate"]))
     dat["sgRNA"] = LabelEncoder().fit_transform(dat["sgRNA"].values)
-    if not normalize:
+    if family != "gaussian":
         dat["counts"] = sp.floor(dat["counts"].values)
     return dat
 
@@ -137,39 +137,29 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
             print("Error with some plot: {}\n".format(str(e)))
 
 
-models = {
-    "shm": shm.models.shm,
-    "shm_independent_l": shm.models.shm_independent_l,
-    "shm_no_clustering": shm.models.shm_no_clustering,
-    "shm_no_clustering_independent_l":
-        shm.models.shm_no_clustering_independent_l
-}
-
-
 @click.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
-@click.option('--normalize', '-n', is_flag=True)
-@click.option('--keep-burnin', '-k', is_flag=True)
+@click.option('--family', type=click.Choice(["gaussian", "poisson"]),
+              default="gaussian")
 @click.option('--filter', '-f', is_flag=True)
-@click.option("--model-type", type=click.Choice(models.keys()), default="shm")
+@click.option("--sampler", type=click.Choice(["nuts", "metropolis"]),
+              default="metropolis")
+@click.option("--model", type=click.Choice(["mrf", "clustering"]),
+              default="mrf")
+@click.option("--independent_interventions", '-i', is_flag=True)
 @click.option("--ntune", type=int, default=50)
-@click.option("--nsample", type=int, default=100)
-@click.option("--ninit", type=int, default=1000)
-def run(infile, outfile, normalize, keep_burnin, filter,
-        model_type, ntune, nsample, ninit):
-    read_counts = _load_data(infile, normalize)
+@click.option("--ndraw", type=int, default=100)
+def run(infile, outfile, family, filter, sampler, model,
+        independent_intervenctions, model_type,
+        ntune, ndraw):
+    read_counts = _load_data(infile, family)
     if filter:
         print("Filtering by genes")
         read_counts = read_counts.query("Gene == 'BCR' | Gene == 'PSMB1'")
     model, genes, gene_conds = models[model_type](read_counts, normalize)
 
-    if not keep_burnin:
-        print("Removing burning")
-    with model:
-        trace = pm.sample(nsample, tune=ntune, init="advi", n_init=ninit,
-                          chains=4, random_seed=42,
-                          discard_tuned_samples=not keep_burnin)
+
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
     _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,

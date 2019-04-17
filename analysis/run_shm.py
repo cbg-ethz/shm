@@ -17,9 +17,10 @@ from shm.family import Family
 from shm.globals import GENE
 from shm.link import Link
 from shm.models.hlm import HLM
-from shm.plot import (plot_trace, plot_rhat, plot_neff, plot_parallel,
-                      plot_hist, plot_data, plot_posterior
-                      )
+from shm.plot import (
+    plot_trace, plot_rhat, plot_neff, plot_parallel,
+    plot_hist, plot_data, plot_posterior
+)
 from shm.sampler import Sampler
 
 warnings.filterwarnings("ignore")
@@ -57,6 +58,9 @@ def _read_graph(infile, data):
     G = G.subgraph(numpy.sort(genes))
     data = data[data.id.isin(numpy.sort(G.nodes()))]
     return G, data
+
+
+
 
 
 def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
@@ -169,7 +173,6 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.option("--ndraw", type=int, default=100)
 @click.option("--graph", type=str, default=None)
 def run(infile, outfile, family, filter, sampler, ntune, ndraw, graph):
-
     read_counts = _load_data(infile, family)
     if filter:
         print("Filtering by genes")

@@ -31,19 +31,6 @@ class HLM(HM):
                          graph,
                          node_labels,
                          sampler)
-        self._is_set = False
-        self._set()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self):
-        pass
-
-    def _set(self):
-        self._set_model()
-        self._set_samplers()
-        self._is_set = True
 
     def sample(self, n_draw=1000, n_tune=1000, seed=23):
         # TODO : add diagnostics
@@ -55,14 +42,6 @@ class HLM(HM):
             point = self._discrete_step(point)
             point, state = self._continuous_step(point)
             trace.record(point, state)
-
-    def _set_model(self):
-        if self.__graph:
-            logger.info("Building mrf hierarchical model")
-            self._set_mrf_model()
-        else:
-            logger.info("Building cluster hierarchical model")
-            self._set_clustering_model()
 
     def _set_mrf_model(self):
         with pm.Model() as model:

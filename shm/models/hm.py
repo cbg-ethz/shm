@@ -1,15 +1,21 @@
-import numpy
+import abc
+import logging
+
+import numpy as np
 from abc import ABC
 
 import pandas as pd
-import pymc3
+import pymc3 as pm
 import scipy as sp
+from pymc3.backends import NDArray
 from sklearn.preprocessing import LabelEncoder
 
 from shm.family import Family
 from shm.globals import INTERVENTION, REPLICATE, GENE, CONDITION
 from shm.link import Link
 from shm.sampler import Sampler
+
+logger = logging.getLogger(__name__)
 
 
 class HM(ABC):
@@ -54,11 +60,36 @@ class HM(ABC):
 
         self._set_link(link)
         self._set_sampler(sampler)
+        self._set_model()
 
+    def _set_model(self):
+        self._set_model()
+        self._set_samplers()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        pass
 
     @property
     def family(self):
         return self.__family
+
+    @abc.abstractmethod
+    def sample(self, n_draw=1000, n_tune=1000, seed=23):
+        pass
+
+    def sample(self, n_draw=1000, n_tune=1000, seed=23):
+        # TODO : add diagnostics
+        # TODO: return a multitrace
+        np.random.seed(seed)
+        trace = NDArray(model=self.__model)
+        point = pm.Point(self.__model.test_point, model=self.__model)
+        for i in range(n_tune + n_draw):
+            point = self._discrete_step(point)
+            point, state = self._continuous_step(point)
+            trace.record(point, state)
 
     @property
     def _beta_idx(self):
@@ -79,3 +110,11 @@ class HM(ABC):
             setattr(self, sampler, pymc3.Metropolis)
         else:
             raise ValueError("Incorect link function specified")
+
+    def _set_model(self):
+        if self.__graph:
+            logger.info("Building mrf hierarchical model")
+            self._set_mrf_model()
+        else:
+            logger.info("Building cluster hierarchical model")
+            self._set_clustering_model()

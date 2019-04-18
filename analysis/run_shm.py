@@ -160,15 +160,20 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
-@click.option('--family', type=click.Choice(["gaussian", "poisson"]),
+@click.option('--family',
+              type=click.Choice(["gaussian", "poisson"]),
               default="gaussian")
-@click.option('--filter', '-f', is_flag=True)
-@click.option("--sampler", type=click.Choice(["nuts", "metropolis"]),
+@click.option('--filter', is_flag=True)
+@click.option('--model',
+              type=click.Choice(["mrf", "clustering", "simple"]),
+              default="simple")
+@click.option("--sampler",
+              type=click.Choice(["nuts", "metropolis"]),
               default="metropolis")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--graph", type=str, default=None)
-def run(infile, outfile, family, filter, sampler, ntune, ndraw, graph):
+def run(infile, outfile, family, model, filter, sampler, ntune, ndraw, graph):
     read_counts = _load_data(infile, family)
     if filter:
         print("Filtering by genes")
@@ -176,12 +181,12 @@ def run(infile, outfile, family, filter, sampler, ntune, ndraw, graph):
 
     family = Family.gaussian if family == "gaussian" else Family.poisson
     link = Link.identity if family == "gaussian" else Link.log
-    sampler = Sampler.Metropolis if sampler == "metropolis" else Sampler.NUTS
     graph, read_counts = _read_graph(graph, read_counts)
 
     with HLM(data=read_counts,
              family=family,
              link=link,
+            model=model,
              sampler=sampler,
              graph=graph) as model:
         trace = model.sample(ndraw, ntune, 23)

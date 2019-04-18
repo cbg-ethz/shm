@@ -20,14 +20,16 @@ logger = logging.getLogger(__name__)
 class HLM(HM):
     def __init__(self,
                  data: pd.DataFrame,
-                 family=Family.gaussian,
+                 family="gaussian",
                  link=Link.identity,
+                 model="simple",
                  graph=None,
                  node_labels=None,
-                 sampler=Sampler.NUTS):
+                 sampler="metropolis"):
         super().__init__(data,
                          family,
                          link,
+                         model,
                          graph,
                          node_labels,
                          sampler)

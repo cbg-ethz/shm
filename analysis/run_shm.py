@@ -33,16 +33,16 @@ def _load_data(infile, family):
         dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
         dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
         dat["r2"] = sp.log(dat["r2"].values / dat["cm"].values)
-    dat = (dat[["Condition", "Gene", "sgRNA", "r1", "r2"]]
-           .query("Gene != 'Control'")
-           .melt(id_vars=["Gene", "Condition", "sgRNA"],
+    dat = (dat[["condition", "gene", "intervention", "r1", "r2"]]
+           .query("gene != 'Control'")
+           .melt(id_vars=["gene", "condition", "intervention"],
                  value_vars=["r1", "r2"],
                  var_name="replicate",
-                 value_name="counts")
-           .sort_values(["Gene", "Condition", "sgRNA", "replicate"]))
-    dat["sgRNA"] = LabelEncoder().fit_transform(dat["sgRNA"].values)
+                 value_name="readout")
+           .sort_values(["gene", "condition", "intervention", "replicate"]))
+    dat["intervention"] = LabelEncoder().fit_transform(dat["intervention"].values)
     if family != "gaussian":
-        dat["counts"] = sp.floor(dat["counts"].values)
+        dat["readout"] = sp.floor(dat["readout"].values)
     return dat
 
 
@@ -56,8 +56,9 @@ def _read_graph(infile, data):
       data=(('weight', float),),
       nodetype=str)
     G = G.subgraph(numpy.sort(genes))
-    data = data[data.id.isin(numpy.sort(G.nodes()))]
+    data = data[data.gene.isin(numpy.sort(G.nodes()))]
     return G, data
+
 
 def _plot_forest(trace, outfile, genes, gene_cond, fm, model):
     fig, _ = az.plot_forest(trace, var_names="gamma", credible_interval=0.95)
@@ -177,16 +178,16 @@ def run(infile, outfile, family, model, filter, sampler, ntune, ndraw, graph):
     read_counts = _load_data(infile, family)
     if filter:
         print("Filtering by genes")
-        read_counts = read_counts.query("Gene == 'BCR' | Gene == 'PSMB1'")
+        read_counts = read_counts.query("gene == 'BCR' | gene == 'PSMB1'")
 
-    family = Family.gaussian if family == "gaussian" else Family.poisson
     link = Link.identity if family == "gaussian" else Link.log
+    family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)
 
     with HLM(data=read_counts,
              family=family,
              link=link,
-            model=model,
+             model=model,
              sampler=sampler,
              graph=graph) as model:
         trace = model.sample(ndraw, ntune, 23)

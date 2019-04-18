@@ -8,10 +8,3 @@ GENE = "gene"
 INTERVENTION = "intervention"
 REPLICATE = "replicate"
 READOUT= "readout"
-
-GAUSSIAN="gaussian"
-POISSON="poisson"
-
-MRF="mrf"
-CLUSTERING="clustering"
-SIMPLE="simple"

@@ -1,6 +1,12 @@
 from enum import Enum
 
+import numpy
+
+
+def _id(x):
+    return x
+
 
 class Link(Enum):
-    identity = 1
-    log = 2
+    identity = _id
+    log = numpy.exp

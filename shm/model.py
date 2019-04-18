@@ -1,5 +1,4 @@
-
-from enum import Enum
+from shm.enum import Enum
 
 
 class Model(Enum):

@@ -1,6 +1,7 @@
-from enum import Enum
+from shm.enum import Enum
+import pymc3 as pm
 
 
 class Sampler(Enum):
-    NUTS = "nuts"
-    Metropolis = "metropolis"
+    nuts = pm.NUTS
+    metropolis = pm.Metropolis

@@ -21,11 +21,11 @@ class HGP(HM):
                          node_labels,
                          sampler)
 
+    def _set_simple_model(self):
+        raise NotImplementedError()
+
     def _set_mrf_model(self):
         raise NotImplementedError()
 
     def _set_clustering_model(self):
-        raise NotImplementedError()
-
-    def sample(self, n_draw=1000, n_tune=1000, seed=23):
         raise NotImplementedError()

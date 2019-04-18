@@ -95,6 +95,18 @@ class HM(ABC):
         else:
             raise ValueError("Model not supported")
 
+    @abc.abstractmethod
+    def _set_simple_model(self):
+        pass
+
+    @abc.abstractmethod
+    def _set_clustering_model(self):
+        pass
+
+    @abc.abstractmethod
+    def _set_mrf_model(self):
+        pass
+
     def _set_data(self):
         data = self.__data
         self.__n, _ = data.shape

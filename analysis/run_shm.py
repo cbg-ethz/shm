@@ -180,13 +180,13 @@ def run(infile, outfile, family, model, filter, sampler, ntune, ndraw, graph):
         print("Filtering by genes")
         read_counts = read_counts.query("gene == 'BCR' | gene == 'PSMB1'")
 
-    link = Link.identity if family == "gaussian" else Link.log
+    link_function = Link.identity if family == "gaussian" else Link.log
     family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)
 
     with HLM(data=read_counts,
              family=family,
-             link=link,
+             link_function=link_function,
              model=model,
              sampler=sampler,
              graph=graph) as model:

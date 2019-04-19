@@ -6,14 +6,9 @@ import networkx
 import numpy
 from pymc3 import Discrete
 
-from shm.distributions.MRF import MRF
 
-
-class BinaryMRF(MRF, Discrete):
+class BinaryMRF(Discrete):
     def __init__(self, G, node_labels=None, *args, **kwargs):
-        super(BinaryMRF, self).__init__(*args, **kwargs)
-        self.mode = None
-
         if isinstance(G, networkx.Graph):
             self.__node_labels = numpy.sort(G.nodes())
             self.__adj = networkx.to_numpy_matrix(
@@ -27,6 +22,9 @@ class BinaryMRF(MRF, Discrete):
             self.__adj = G
 
         self.__n = len(self.__node_labels)
+        super(BinaryMRF, self).__init__(shape=self.__n, *args, **kwargs)
+
+        self.mode = scipy.repeat(1, self.__n)
         self.__choice = numpy.random.choice
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n )
 

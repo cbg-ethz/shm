@@ -21,22 +21,37 @@ class HLM(HM):
     def __init__(self,
                  data: pd.DataFrame,
                  family="gaussian",
-                 link=Link.identity,
+                 link_function=Link.identity,
                  model="simple",
                  graph=None,
                  node_labels=None,
                  sampler="metropolis"):
-        super().__init__(data,
-                         family,
-                         link,
-                         model,
-                         graph,
-                         node_labels,
-                         sampler)
+        super().__init__(data=data,
+                         family=family,
+                         link_function=link_function,
+                         model=model,
+                         graph=graph,
+                         node_labels=node_labels,
+                         sampler=sampler)
+
+    @property
+    def model(self):
+        return self.__model
+
+    def sample(self, n_draw=1000, n_tune=1000, seed=23):
+        # TODO : add diagnostics
+        # TODO: return a multitrace
+        np.random.seed(seed)
+        trace = NDArray(model=self.model)
+        point = pm.Point(self.model.test_point, model=self.model)
+        for i in range(n_tune + n_draw):
+            point = self._discrete_step.step(point)
+            point, state = self._continuous_step.step(point)
+            trace.record(point, state)
 
     def _set_mrf_model(self):
         with pm.Model() as model:
-            z = BinaryMRF('z', G=self.__graph, node_labels=self.__node_labels)
+            z = BinaryMRF('z', G=self.graph, node_labels=self.node_labels)
 
             tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
             mean_g = pm.Normal("mu_g", mu=np.array([-1., 1.]), sd=0.5, shape=2)
@@ -49,7 +64,7 @@ class HLM(HM):
                 beta = pm.Deterministic("beta", var=gamma)
             else:
                 beta = pm.Normal("beta",
-                                 mu=gamma[self.beta_idx], sd=tau_b,
+                                 mu=gamma[self._beta_idx], sd=tau_b,
                                  shape=len(self._beta_idx))
 
             if self.family == Family.gaussian:
@@ -57,15 +72,15 @@ class HLM(HM):
                 sd = pm.HalfNormal("sd", sd=0.5)
                 pm.Normal(
                   "x",
-                  mu=beta[self.data[CONDITION]] + l[self.data[INTERVENTION]],
+                  mu=beta[self._gene_cond_data_idx] + l[self._intervention_data_idx],
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
                 l = pm.Lognormal("l", mu=1, sd=0.25, shape=self.n_interventions)
                 pm.Poisson(
                   "x",
-                  mu=self.link(beta[self.data[CONDITION]]) *
-                     l[self.data[INTERVENTION]],
+                  mu=self.link(beta[self._gene_cond_data_idx]) *
+                     l[self._intervention_data_idx],
                   observed=np.squeeze(self.data[READOUT].values))
 
         with model:

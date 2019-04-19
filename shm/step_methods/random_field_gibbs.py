@@ -18,6 +18,6 @@ class RandomFieldGibbs(ArrayStep):
     def step(self, point):
         # TODO parserino of parameterino
         z = point[self.__var_name]
-        point[self.__var_name] = self.var.posterior_sample(point)
+        point[self.__var_name] = self.__var.distribution.posterior_sample(point)
         return point
 

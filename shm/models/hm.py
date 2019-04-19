@@ -46,6 +46,10 @@ class HM(ABC):
         pass
 
     @property
+    def model_type(self):
+        return self.__model_type
+
+    @property
     def data(self):
         return self.__data
 
@@ -115,6 +119,7 @@ class HM(ABC):
     def _set_model(self, model):
         if isinstance(model, str):
             model = Model.from_str(model)
+        self.__model_type = model
         if model == Model.mrf:
             logger.info("Building mrf hierarchical model")
             if not self.__graph:
@@ -123,7 +128,7 @@ class HM(ABC):
         elif model == Model.clustering:
             logger.info("Building cluster hierarchical model")
             self._set_clustering_model()
-        elif model == Model.simpleimple:
+        elif model == Model.simple:
             logger.info("Building eimple hierarchical model")
             self._set_simple_model()
         else:

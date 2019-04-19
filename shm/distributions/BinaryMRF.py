@@ -75,9 +75,9 @@ class BinaryMRF(Discrete):
 
     def logp(self, value):
         print("I am never needed other than for testing purposes")
-        return -numpy.inf
+        return 0
 
-    def posterior_sample(self, point, data):
+    def posterior_sample(self, point):
         # TODO
         print("that is where i am at")
         return self.__point

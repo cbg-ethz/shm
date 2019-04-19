@@ -1,21 +1,22 @@
+import logging
+
 import numpy as np
 import pandas as pd
 import pymc3 as pm
 import theano.tensor as tt
 from pymc3.backends import NDArray
-from sklearn.preprocessing import LabelEncoder
+from pymc3.backends.base import MultiTrace
 
-from shm.family import Family
-from shm.globals import READOUT, CONDITION, INTERVENTION
-from shm.link import Link
-from shm.models.hm import HM
 from shm.distributions.BinaryMRF import BinaryMRF
-from shm.sampler import Sampler
+from shm.family import Family
+from shm.globals import READOUT
+from shm.link import Link
+from shm.model import Model
+from shm.models.hm import HM
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
-import logging
 logger = logging.getLogger(__name__)
-
+logging.getLogger().addHandler(logging.StreamHandler())
 
 class HLM(HM):
     def __init__(self,
@@ -42,12 +43,24 @@ class HLM(HM):
         # TODO : add diagnostics
         # TODO: return a multitrace
         np.random.seed(seed)
+
         trace = NDArray(model=self.model)
+        trace.setup(n_draw + n_tune, 0, None)
         point = pm.Point(self.model.test_point, model=self.model)
+
         for i in range(n_tune + n_draw):
-            point = self._discrete_step.step(point)
-            point, state = self._continuous_step.step(point)
-            trace.record(point, state)
+            if self.model_type != Model.simple:
+                point = self._discrete_step.step(point)
+            point, _ = self._continuous_step.step(point)
+            trace.record(point)
+
+        trace = MultiTrace(list(trace))
+        trace = trace[n_tune:]
+
+        trace.report._run_convergence_checks(trace, self.model)
+        trace.report._log_summary()
+
+        return trace
 
     def _set_mrf_model(self):
         with pm.Model() as model:
@@ -114,24 +127,24 @@ class HLM(HM):
                 beta = pm.Deterministic("beta", var=gamma)
             else:
                 beta = pm.Normal("beta",
-                                 mu=gamma[self.beta_idx],
-                                 sd=tau_b,
-                                 shape=len(self.beta_idx))
+                                 mu=gamma[self._beta_idx], sd=tau_b,
+                                 shape=len(self._beta_idx))
 
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=0.25, shape=self.n_interventions)
                 sd = pm.HalfNormal("sd", sd=0.5)
                 pm.Normal(
                   "x",
-                  mu=beta[self.data[CONDITION]] + l[self.data[INTERVENTION]],
+                  mu=beta[self._gene_cond_data_idx] + l[
+                      self._intervention_data_idx],
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
                 l = pm.Lognormal("l", mu=1, sd=0.25, shape=self.n_interventions)
                 pm.Poisson(
                   "x",
-                  mu=self.link(beta[self.data[CONDITION]]) * \
-                     l[self.data[INTERVENTION]],
+                  mu=self.link(beta[self._gene_cond_data_idx]) *
+                     l[self._intervention_data_idx],
                   observed=np.squeeze(self.data[READOUT].values))
 
         with model:
@@ -152,35 +165,34 @@ class HLM(HM):
             mean_g = pm.Normal("mu_g", mu=0, sd=0.5, shape=1)
             gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
 
-            tau_b = pm.InverseGamma("tau_b", alpha=4., beta=1., shape=1)
             if self.n_conditions == 1:
                 beta = pm.Deterministic("beta", var=gamma)
             else:
+                tau_b = pm.InverseGamma("tau_b", alpha=4., beta=1., shape=1)
                 beta = pm.Normal("beta",
-                                 mu=gamma[self.beta_idx],
-                                 sd=tau_b,
-                                 shape=len(self.beta_idx))
+                                 mu=gamma[self._beta_idx], sd=tau_b,
+                                 shape=len(self._beta_idx))
 
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=0.25, shape=self.n_interventions)
                 sd = pm.HalfNormal("sd", sd=0.5)
                 pm.Normal(
                   "x",
-                  mu=beta[self.data[CONDITION]] + l[self.data[INTERVENTION]],
+                  mu=beta[self._gene_cond_data_idx] + l[self._intervention_data_idx],
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
                 l = pm.Lognormal("l", mu=1, sd=0.25, shape=self.n_interventions)
                 pm.Poisson(
                   "x",
-                  mu=self.link(beta[self.data[CONDITION]]) * \
-                     l[self.data[INTERVENTION]],
+                  mu=self.link(beta[self._gene_cond_data_idx]) *
+                     l[self._intervention_data_idx],
                   observed=np.squeeze(self.data[READOUT].values))
 
         with model:
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l, sd])
+                    tau_g, mean_g, gamma, beta, l, sd])
             else:
                 self._continuous_step = self.sampler([
                     tau_g, mean_g, gamma, tau_b, beta, l])

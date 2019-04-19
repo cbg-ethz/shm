@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-import numpy
 import warnings
 
 import arviz as az
 import click
 import networkx
+import numpy
 import pandas as pd
 import pymc3 as pm
 import scipy as sp
-
+from matplotlib import pyplot as plt
 from pymc3 import model_to_graphviz
 from sklearn.preprocessing import LabelEncoder
-from matplotlib import pyplot as plt
 
 from shm.family import Family
 from shm.globals import GENE
@@ -21,15 +20,21 @@ from shm.plot import (
     plot_trace, plot_rhat, plot_neff, plot_parallel,
     plot_hist, plot_data, plot_posterior
 )
-from shm.sampler import Sampler
 
 warnings.filterwarnings("ignore")
+
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    handlers=[logging.StreamHandler()])
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
 def _load_data(infile, family):
     dat = pd.read_csv(infile, sep="\t")
     if family == "gaussian":
-        print("Taking log-fold change")
+        logger.info("Taking log-fold change")
         dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
         dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
         dat["r2"] = sp.log(dat["r2"].values / dat["cm"].values)
@@ -40,7 +45,8 @@ def _load_data(infile, family):
                  var_name="replicate",
                  value_name="readout")
            .sort_values(["gene", "condition", "intervention", "replicate"]))
-    dat["intervention"] = LabelEncoder().fit_transform(dat["intervention"].values)
+    dat["intervention"] = LabelEncoder().fit_transform(
+        dat["intervention"].values)
     if family != "gaussian":
         dat["readout"] = sp.floor(dat["readout"].values)
     return dat
@@ -155,7 +161,7 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
         try:
             _plot_parallel(trace, outfile, n_tune, n_sample, keep_burnin, fm)
         except Exception as e:
-            print("Error with some plot: {}\n".format(str(e)))
+            logger.error("Error with some plot: {}\n".format(str(e)))
 
 
 @click.command()
@@ -168,16 +174,13 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.option('--model',
               type=click.Choice(["mrf", "clustering", "simple"]),
               default="simple")
-@click.option("--sampler",
-              type=click.Choice(["nuts", "metropolis"]),
-              default="metropolis")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--graph", type=str, default=None)
-def run(infile, outfile, family, model, filter, sampler, ntune, ndraw, graph):
+def run(infile, outfile, family, model, filter, ntune, ndraw, graph):
     read_counts = _load_data(infile, family)
     if filter:
-        print("Filtering by genes")
+        logger.info("Filtering by genes")
         read_counts = read_counts.query("gene == 'BCR' | gene == 'PSMB1'")
 
     link_function = Link.identity if family == "gaussian" else Link.log
@@ -188,10 +191,16 @@ def run(infile, outfile, family, model, filter, sampler, ntune, ndraw, graph):
              family=family,
              link_function=link_function,
              model=model,
-             sampler=sampler,
+             sampler="nuts",
              graph=graph) as model:
         trace = model.sample(ndraw, ntune, 23)
 
+    print(
+      az.effective_sample_size(trace)
+    )
+    print(
+      az.rhat(trace)
+    )
     # pm.save_trace(trace, outfile + "_trace", overwrite=True)
     # _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
     #       model_type, keep_burnin, read_counts)

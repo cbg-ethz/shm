@@ -9,6 +9,7 @@ class RandomFieldGibbs(ArrayStep):
 
     def __init__(self, var, model=None):
         self.__model = pymc3.modelcontext(model)
+        vars = pymc3.inputvars(var)
         if len(var) != 1:
             raise ValueError("Please provide only one")
 

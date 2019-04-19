@@ -49,7 +49,7 @@ with pm.Model() as m:
 
 print("now1")
 with m:
-    step1 = pm.Metropolis([p, ps])
+    step1 = pm.CategoricalGibbsMetropolis([p, ps])
     step2 = MyBinaryMRFSampler([ni])
 
 pm.sample

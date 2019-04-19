@@ -195,9 +195,7 @@ def run(infile, outfile, family, model, filter, ntune, ndraw, graph):
              graph=graph) as model:
         trace = model.sample(ndraw, ntune, 23)
 
-    print(
-      az.effective_sample_size(trace)
-    )
+
     print(
       az.rhat(trace)
     )

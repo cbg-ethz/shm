@@ -54,10 +54,10 @@ class HLM(HM):
             point, _ = self._continuous_step.step(point)
             trace.record(point)
 
-        trace = MultiTrace(list(trace))
+        trace.close()
+        trace = MultiTrace([trace])
         trace = trace[n_tune:]
 
-        trace.report._run_convergence_checks(trace, self.model)
         trace.report._log_summary()
 
         return trace

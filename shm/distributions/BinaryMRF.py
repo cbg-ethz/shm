@@ -26,7 +26,7 @@ class BinaryMRF(Discrete):
 
         self.mode = scipy.repeat(1, self.__n)
         self.__choice = numpy.random.choice
-        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n )
+        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
 
     @property
     def n_nodes(self):

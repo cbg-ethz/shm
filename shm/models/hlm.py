@@ -44,6 +44,11 @@ class HLM(HM):
         # TODO: return a multitrace
         np.random.seed(seed)
 
+        with self.model:
+            t = pm.sample(50, tune=50, chains=1, cores=1,
+                          step=[self._continuous_step,
+                                self._discrete_step])
+
         trace = NDArray(model=self.model)
         trace.setup(n_draw + n_tune, 0, None)
         point = pm.Point(self.model.test_point, model=self.model)

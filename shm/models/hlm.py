@@ -39,6 +39,10 @@ class HLM(HM):
     def model(self):
         return self.__model
 
+    @property
+    def _steps(self):
+        return self.__steps
+
     def sample(self, n_draw=1000, n_tune=1000, seed=23):
         # TODO : add diagnostics
         # TODO: return a multitrace
@@ -46,8 +50,7 @@ class HLM(HM):
 
         with self.model:
             t = pm.sample(50, tune=50, chains=1, cores=1,
-                          step=[self._continuous_step,
-                                self._discrete_step])
+                          step=self._steps)
 
         trace = NDArray(model=self.model)
         trace.setup(n_draw + n_tune, 0, None)
@@ -110,6 +113,7 @@ class HLM(HM):
                 self._continuous_step = self.sampler([
                     tau_g, mean_g, gamma, tau_b, beta, l])
 
+        self.__steps = [self._discrete_step, self._continuous_step]
         self.__model = model
         return self
 
@@ -161,6 +165,7 @@ class HLM(HM):
                 self._continuous_step = self.sampler([
                     p, tau_g, mean_g, gamma, tau_b, beta, l])
 
+        self.__steps = [self._discrete_step, self._continuous_step]
         self.__model = model
         return self
 
@@ -202,5 +207,6 @@ class HLM(HM):
                 self._continuous_step = self.sampler([
                     tau_g, mean_g, gamma, tau_b, beta, l])
 
+        self.__steps = [self._continuous_step]
         self.__model = model
         return self

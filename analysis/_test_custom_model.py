@@ -26,33 +26,32 @@ class MyDistr(Discrete):
 
 
 class MyBinaryMRFSampler(ArrayStep):
-    def __init__(self, var):
-        self.var = var[0]
-        print(var)
+    def __init__(self, vars, model=None):
+        model = pm.modelcontext(model)
+        vars = pm.inputvars(vars)
+        super(MyBinaryMRFSampler, self).__init__(vars, [model.fastlogp])
 
-    def step(self, p):
+    def step(self, point):
         print("Stepping")
-        point["ni"] = np.array(self.var.random(point))
+        point["ni"] = np.array(self.vars[0].random(point))
         return point
 
 
 with pm.Model() as m:
     ni = MyDistr('ni', .5)
-    s = pm.Poisson
-    print("now5")
-    ps = pm.Uniform('ps', 0., .5, shape=2)
-    p = pm.Uniform('p', ps, 1., shape=2)
-    print("now6")
-    k = pm.Binomial('k', p=p[0], n=(ni + 1) * 10, observed=[4, 4])
-    print("no7")
+    ps = pm.Uniform('ps', 0., .5, shape=1)
+    p = pm.Uniform('p', ps, 1., shape=1)
+    k = pm.Binomial('k', p=p, n=(ni + 1) * 10, observed=4)
 
 
 print("now1")
 with m:
-    step1 = pm.CategoricalGibbsMetropolis([p, ps])
+    step1 = pm.NUTS([p, ps])
     step2 = MyBinaryMRFSampler([ni])
 
-pm.sample
+print("now2")
+with m:
+    pm.sample(50, tune=50, step=[step1, step2], chains=1, cores=1)
 
 print("now3")
 point = m.test_point

@@ -45,29 +45,10 @@ class HLM(HM):
 
     def sample(self, n_draw=1000, n_tune=1000, seed=23):
         # TODO : add diagnostics
-        # TODO: return a multitrace
-        np.random.seed(seed)
-
+        # TODO: return a multitrace        
         with self.model:
-            t = pm.sample(50, tune=50, chains=1, cores=1,
-                          step=self._steps)
-
-        trace = NDArray(model=self.model)
-        trace.setup(n_draw + n_tune, 0, None)
-        point = pm.Point(self.model.test_point, model=self.model)
-
-        for i in range(n_tune + n_draw):
-            if self.model_type != Model.simple:
-                point = self._discrete_step.step(point)
-            point, _ = self._continuous_step.step(point)
-            trace.record(point)
-
-        trace.close()
-        trace = MultiTrace([trace])
-        trace = trace[n_tune:]
-
-        trace.report._log_summary()
-
+            trace = pm.sample(50, tune=50, chains=1, cores=1,
+            	          step=self._steps, random_seed=seed)
         return trace
 
     def _set_mrf_model(self):

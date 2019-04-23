@@ -44,21 +44,17 @@ class HLM(HM):
     def _steps(self):
         return self.__steps
 
-    def sample(self, n_draw=1000, n_tune=1000, seed=23):
-        # TODO : add diagnostics
-        # TODO: return a multitrace
-        np.random.seed(seed)
-
+    def sample(self, draws=1000, tune=1000, chains=None, cores=None,
+               seed=23):
         with self.model:
-            trace = pm.sample(50, tune=50, chains=1, cores=1,
-                          step=self._steps,
-                          random_seed=seed)
+            trace = pm.sample(
+              draws=draws, tune=tune, chains=chains, cores=cores,
+              step=self._steps, random_seed=seed, progressbar=False)
         return trace
 
     def _set_mrf_model(self):
         with pm.Model() as model:
             z = BinaryMRF('z', G=self.graph, node_labels=self.node_labels)
-
             tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
             mean_g = pm.Normal("mu_g", mu=np.array([-1., 1.]), sd=0.5, shape=2)
             pm.Potential(
@@ -78,7 +74,8 @@ class HLM(HM):
                 sd = pm.HalfNormal("sd", sd=0.5)
                 pm.Normal(
                   "x",
-                  mu=beta[self._gene_cond_data_idx] + l[self._intervention_data_idx],
+                  mu=beta[self._gene_cond_data_idx] + l[
+                      self._intervention_data_idx],
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
@@ -173,7 +170,8 @@ class HLM(HM):
                 sd = pm.HalfNormal("sd", sd=0.5)
                 pm.Normal(
                   "x",
-                  mu=beta[self._gene_cond_data_idx] + l[self._intervention_data_idx],
+                  mu=beta[self._gene_cond_data_idx] + l[
+                      self._intervention_data_idx],
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:

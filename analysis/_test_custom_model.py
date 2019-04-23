@@ -25,6 +25,8 @@ class MyDistr(Discrete):
         return 0
 
 
+pm.sample
+
 class MyBinaryMRFSampler(ArrayStep):
     def __init__(self, vars, model=None):
         model = pm.modelcontext(model)

@@ -49,7 +49,7 @@ class BinaryMRF(Discrete):
         next_point = numpy.zeros(self.n_nodes)
         for idx in range(self.n_nodes):
             next_point[idx] = self._gibbs(idx, z, node_potentials)
-        self.__point = next_point
+        self.__point = next_point.astype(numpy.int64)
         return self.__point
 
     def logp(self, value):

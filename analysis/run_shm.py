@@ -193,15 +193,11 @@ def run(infile, outfile, family, model, filter, ntune, ndraw, graph):
              model=model,
              sampler="nuts",
              graph=graph) as model:
-        trace = model.sample(ndraw, ntune, 23)
+        trace = model.sample(draws=ndraw, tune=ntune, chains=4, seed=23)
 
-
-    print(
-      az.rhat(trace)
-    )
-    # pm.save_trace(trace, outfile + "_trace", overwrite=True)
-    # _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
-    #       model_type, keep_burnin, read_counts)
+     pm.save_trace(trace, outfile + "_trace", overwrite=True)
+     _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
+           model_type, keep_burnin, read_counts)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ class BinaryMRF(Discrete):
         super(BinaryMRF, self).__init__(shape=self.__n, *args, **kwargs)
 
         self.mode = scipy.repeat(1, self.__n)
-        self.__choice = scipy.stats.bernoulli.rvs()
+        self.__choice = scipy.stats.bernoulli.rvs
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
         self.__blanket = {}
 
@@ -45,21 +45,29 @@ class BinaryMRF(Discrete):
         return next_point
 
     def posterior_sample(self, z, gamma, mu, tau):
-        logliks = self._loglik(gamma, mu, tau)
+        node_potentials = self._log_node_potentials(gamma, mu, tau)
         next_point = numpy.zeros(self.n_nodes)
-        for idx in range(self.node_labels):
-            next_point[idx] = self._gibbs(idx, z, logliks)
+        for idx in range(self.n_nodes):
+            next_point[idx] = self._gibbs(idx, z, node_potentials)
         self.__point = next_point
         return self.__point
 
     def logp(self, value):
         return 0
 
-    def _gibbs(self, idx, point, loglik=None):
+    def _gibbs(self, idx, point, node_potentials=None):
         edge_pot = self._log_edge_potential(point, idx)
-        node_pot = self._log_node_potential(idx, loglik) if loglik else 0
-        p = scipy.special.expit(2 * edge_pot - node_pot)
+        node_pot = self._log_node_potential(node_potentials, idx)
+        p = scipy.special.expit(2 * edge_pot + node_pot)
         return self.__choice(p)
+
+    def _log_edge_potential(self, point, idx):
+        mb = self._markov_blank(idx)
+        point_label, blanket_labs = point[idx], point[mb]
+        mb_weights = self.__adj[mb, idx]
+        s1 = numpy.sum((blanket_labs == point_label) * mb_weights)
+        s2 = numpy.sum((blanket_labs != point_label) * mb_weights)
+        return s1 - s2
 
     def _markov_blank(self, idx):
         if idx in self.__blanket:
@@ -70,20 +78,18 @@ class BinaryMRF(Discrete):
         self.__blanket[idx] = blanket
         return blanket
 
-    def _log_edge_potential(self, point, idx):
-        mb = self._markov_blank(idx)
-        point_label, blanket_labs = point[idx], point[mb]
-        mb_weights = self.__adj[mb, idx]
-        s1 = numpy.sum((blanket_labs == point_label) * mb_weights)
-        s2 = numpy.sum((blanket_labs != point_label) * mb_weights)
-        return s1 - s2
+    def _log_node_potential(self, node_potentials, idx):
+        if node_potentials is None:
+            return 0
+        return node_potentials[idx]
 
-    def _log_node_potential(self, idx, loglik):
-        return loglik[idx, 1] - loglik[idx, 0]
+    def _log_node_potentials(self, gamma, mu, tau):
+        loglik = self._loglik(gamma, mu, tau)
+        return loglik[:, 1] - loglik[:, 0]
 
     def _loglik(self, gamma, mu, tau):
-        neg = scipy.stats.norm.logpdf(gamma, mu[0], tau[0])
-        pos = scipy.stats.norm.logpdf(gamma, mu[1], tau[1])
+        neg = scipy.log2(scipy.stats.norm.pdf(gamma, mu[0], tau))
+        pos = scipy.log2(scipy.stats.norm.pdf(gamma, mu[1], tau))
         return scipy.column_stack((neg, pos))
 
     def _repr_latex_(self, name=None, dist=None):

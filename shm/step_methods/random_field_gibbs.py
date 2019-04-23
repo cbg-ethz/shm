@@ -1,5 +1,8 @@
+import numpy as np
 import pymc3
 from pymc3.step_methods.arraystep import ArrayStep
+
+from shm.family import Family
 
 
 class RandomFieldGibbs(ArrayStep):
@@ -13,12 +16,14 @@ class RandomFieldGibbs(ArrayStep):
         vars = pymc3.inputvars(vars)
         self.__var = vars[0]
         self.__var_name = self.__var.name
-
         super(RandomFieldGibbs, self).__init__(vars, [model.fastlogp])
 
     def step(self, point):
-        # TODO parserino of parameterino
-        z = point[self.__var_name]
-        point[self.__var_name] = self.__var.distribution.posterior_sample(point)
+        z = point['z']
+        mu_g = point['mu_g']
+        tau_g = np.exp(point['tau_g_log__'])
+        gamma = point['gamma']
+        point[self.__var_name] = \
+            self.__var.distribution.posterior_sample(z, gamma, mu_g, tau_g)
         return point
 

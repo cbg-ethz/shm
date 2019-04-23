@@ -18,6 +18,7 @@ from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 logger = logging.getLogger(__name__)
 logging.getLogger().addHandler(logging.StreamHandler())
 
+
 class HLM(HM):
     def __init__(self,
                  data: pd.DataFrame,
@@ -49,26 +50,9 @@ class HLM(HM):
         np.random.seed(seed)
 
         with self.model:
-            t = pm.sample(50, tune=50, chains=1, cores=1,
+            trace = pm.sample(50, tune=50, chains=1, cores=1,
                           step=self._steps,
                           random_seed=seed)
-
-        trace = NDArray(model=self.model)
-        trace.setup(n_draw + n_tune, 0, None)
-        point = pm.Point(self.model.test_point, model=self.model)
-
-        for i in range(n_tune + n_draw):
-            if self.model_type != Model.simple:
-                point = self._discrete_step.step(point)
-            point, _ = self._continuous_step.step(point)
-            trace.record(point)
-
-        trace.close()
-        trace = MultiTrace([trace])
-        trace = trace[n_tune:]
-
-        trace.report._log_summary()
-
         return trace
 
     def _set_mrf_model(self):

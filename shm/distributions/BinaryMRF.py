@@ -52,7 +52,6 @@ class BinaryMRF(Discrete):
         return point_label * (s1 - s2)
 
     def unnormalized_log_prob(self, point):
-        print("I am not needed")
         eneg = 0
         for idx, l in enumerate(point):
             # TODO: multiply or not with label here?
@@ -60,10 +59,7 @@ class BinaryMRF(Discrete):
         return eneg
 
     def random(self, point=None):
-        print("I am never needed")
         next_point = numpy.zeros(self.n_nodes)
-        if not point:
-            point = self.__point
         for idx in range(self.node_labels):
             next_point[idx] = self._gibbs(idx, point)
         self.__point = next_point
@@ -74,13 +70,20 @@ class BinaryMRF(Discrete):
         return self.__choice([-1, 1], p=[p, 1 - p])
 
     def logp(self, value):
-        print("I am never needed other than for testing purposes")
         return 0
 
-    def posterior_sample(self, point):
-        # TODO
-        print("that is where i am at")
+    def posterior_sample(self, z, gamma, mu, tau):
+        logliks = self._loglik(gamma, mu, tau)
+        next_point = numpy.zeros(self.n_nodes)
+        for idx in range(self.node_labels):
+            next_point[idx] = self._gibbs(idx, z)
+        self.__point = next_point
         return self.__point
+
+    def _loglik(self, gamma, mu, tau):
+        neg = scipy.stats.norm.logpdf(gamma, mu[0], tau[0])
+        pos = scipy.stats.norm.logpdf(gamma, mu[1], tau[1])
+        return scipy.column_stack((neg, pos))
 
     def _repr_latex_(self, name=None, dist=None):
         if dist is None:

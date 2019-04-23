@@ -11,7 +11,7 @@ from pymc3.backends import NDArray
 from sklearn.preprocessing import LabelEncoder
 
 from shm.family import Family
-from shm.globals import INTERVENTION, REPLICATE, GENE, CONDITION
+from shm.globals import INTERVENTION, REPLICATE, GENE, CONDITION, READOUT
 from shm.link import Link
 from shm.model import Model
 from shm.sampler import Sampler
@@ -28,7 +28,6 @@ class HM(ABC):
                  graph=None,
                  node_labels=None,
                  sampler=Sampler.metropolis):
-
         self.__data = data
         self.__graph = graph
         self.__node_labels = node_labels

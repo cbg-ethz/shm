@@ -195,9 +195,9 @@ def run(infile, outfile, family, model, filter, ntune, ndraw, graph):
              graph=graph) as model:
         trace = model.sample(draws=ndraw, tune=ntune, chains=4, seed=23)
 
-     pm.save_trace(trace, outfile + "_trace", overwrite=True)
-     _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
-           model_type, keep_burnin, read_counts)
+    pm.save_trace(trace, outfile + "_trace", overwrite=True)
+     # _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
+     #       model_type, keep_burnin, read_counts)
 
 
 if __name__ == "__main__":

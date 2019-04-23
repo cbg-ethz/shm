@@ -51,13 +51,6 @@ class BinaryMRF(Discrete):
         # i think i can actually leave it out
         return point_label * (s1 - s2)
 
-    def unnormalized_log_prob(self, point):
-        eneg = 0
-        for idx, l in enumerate(point):
-            # TODO: multiply or not with label here?
-            eneg += self._edge_potential(point, idx)
-        return eneg
-
     def random(self, point=None):
         next_point = numpy.zeros(self.n_nodes)
         for idx in range(self.node_labels):

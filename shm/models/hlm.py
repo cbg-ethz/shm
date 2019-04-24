@@ -56,7 +56,7 @@ class HLM(HM):
         with pm.Model() as model:
             z = BinaryMRF('z', G=self.graph, node_labels=self.node_labels)
             tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=np.array([-1., 1.]), sd=0.5, shape=2)
+            mean_g = pm.Normal("mu_g", mu=np.array([-1., 0.]), sd=0.5, shape=2)
             pm.Potential(
               "m_opot", var=tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0))
             gamma = pm.Normal("gamma", mean_g[z], tau_g, shape=self.n_genes)
@@ -107,7 +107,7 @@ class HLM(HM):
             z = pm.Categorical("z", p=p, shape=self.n_genes)
 
             tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=np.array([-1., 1.]), sd=0.5, shape=2)
+            mean_g = pm.Normal("mu_g", mu=np.array([-1., 0.]), sd=0.5, shape=2)
             pm.Potential(
               "m_opot", var=tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0))
             gamma = pm.Normal(

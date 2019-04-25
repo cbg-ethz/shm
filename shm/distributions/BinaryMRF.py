@@ -58,6 +58,7 @@ class BinaryMRF(Discrete):
     def _gibbs(self, idx, point, node_potentials=None):
         edge_pot = self._log_edge_potential(point, idx)
         node_pot = self._log_node_potential(node_potentials, idx)
+        # TODO bug here: this cannot be 2*edge pot
         p = scipy.special.expit(2 * edge_pot + node_pot)
         return self.__choice(p)
 

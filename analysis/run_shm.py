@@ -33,29 +33,20 @@ logger.setLevel(logging.DEBUG)
 
 def _load_data(infile, family):
     dat = pd.read_csv(infile, sep="\t")
-    if family == "gaussian":
-        logger.info("Taking log-fold change")
-        dat["cm"] = sp.mean(dat[["c1", "c2"]].values, axis=1)
-        dat["r1"] = sp.log(dat["r1"].values / dat["cm"].values)
-        dat["r2"] = sp.log(dat["r2"].values / dat["cm"].values)
-    dat = (dat[["condition", "gene", "intervention", "r1", "r2"]]
-           .query("gene != 'Control'")
-           .melt(id_vars=["gene", "condition", "intervention"],
-                 value_vars=["r1", "r2"],
-                 var_name="replicate",
-                 value_name="readout")
-           .sort_values(["gene", "condition", "intervention", "replicate"]))
-    dat["intervention"] = LabelEncoder().fit_transform(
-        dat["intervention"].values)
     if family != "gaussian":
         dat["readout"] = sp.floor(dat["readout"].values)
+    cols = ["gene", "condition", "intervention", "replicate", "readout"]
+    for c in cols:
+        if c not in dat.columns:
+            raise ValueError("Check your column names. Should have: {}".format(c))
+
     return dat
 
 
 def _read_graph(infile, data):
     if infile is None:
         return None, data
-    genes = data[GENE].values
+    genes = numpy.unique(data[GENE].values)
     G = networkx.read_edgelist(
       infile,
       delimiter="\t",
@@ -170,19 +161,14 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
 @click.option('--family',
               type=click.Choice(["gaussian", "poisson"]),
               default="gaussian")
-@click.option('--filter', is_flag=True)
 @click.option('--model',
               type=click.Choice(["mrf", "clustering", "simple"]),
               default="simple")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--graph", type=str, default=None)
-def run(infile, outfile, family, model, filter, ntune, ndraw, graph):
+def run(infile, outfile, family, model, ntune, ndraw, graph):
     read_counts = _load_data(infile, family)
-    if filter:
-        logger.info("Filtering by genes")
-        read_counts = read_counts.query("gene == 'BCR' | gene == 'PSMB1'")
-
     link_function = Link.identity if family == "gaussian" else Link.log
     family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)

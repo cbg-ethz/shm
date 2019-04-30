@@ -179,6 +179,7 @@ def run(infile, outfile, family, model, ntune, ndraw, graph):
              model=model,
              sampler="nuts",
              graph=graph) as model:
+        logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=4, seed=23)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)

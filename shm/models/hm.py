@@ -1,17 +1,13 @@
 import abc
 import logging
-
-import numpy as np
 from abc import ABC
 
 import pandas as pd
-import pymc3 as pm
 import scipy as sp
-from pymc3.backends import NDArray
 from sklearn.preprocessing import LabelEncoder
 
 from shm.family import Family
-from shm.globals import INTERVENTION, REPLICATE, GENE, CONDITION, READOUT
+from shm.globals import INTERVENTION, GENE, CONDITION
 from shm.link import Link
 from shm.model import Model
 from shm.sampler import Sampler
@@ -150,23 +146,21 @@ class HM(ABC):
         self.__n, _ = data.shape
         le = LabelEncoder()
 
-        self.__conditions = sp.unique(data[CONDITION].values)
-        self.__con_data_idx = le.fit_transform(data[CONDITION].values)
-        self.__len_conds = len(self.__conditions)
-
         self.__genes = sp.unique(data[GENE].values)
         self.__gene_data_idx = le.fit_transform(data[GENE].values)
         self.__len_genes = len(self.__genes)
+
+        self.__conditions = sp.unique(data[CONDITION].values)
+        self.__con_data_idx = le.fit_transform(data[CONDITION].values)
+        self.__len_conds = len(self.__conditions)
 
         self.__intrs = sp.unique(data[INTERVENTION].values)
         self.__intrs_data_idx = le.fit_transform(data[INTERVENTION].values)
         self.__len_intrs = len(self.__intrs)
 
-        self.__beta_idx = le.fit_transform(
-          ["{}-{}".format(g, c)
-           for g in self.__genes
-           for c in self.__conditions])
+        self.__beta_idx = sp.repeat(sp.unique(self.__gene_data_idx),
+                                    len(self.__conditions))
 
         self.__gene_cond_data_idx = le.fit_transform(
           ["{}-{}".format(g, c)
-           for g, c in zip(data[GENE].values, data[CONDITION].values)])
+           for g, c in zip(self.__gene_data_idx, self.__con_data_idx)])

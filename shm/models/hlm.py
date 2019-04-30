@@ -66,7 +66,7 @@ class HLM(HM):
                                  mu=gamma[self._beta_idx], sd=tau_b,
                                  shape=len(self._beta_idx))
 
-            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1., shape=2)
+            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1.)
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
                 sd = pm.HalfNormal("sd", sd=0.5)
@@ -118,7 +118,7 @@ class HLM(HM):
                                  mu=gamma[self._beta_idx], sd=tau_b,
                                  shape=len(self._beta_idx))
 
-            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1., shape=2)
+            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1.)
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
                 sd = pm.HalfNormal("sd", sd=0.5)
@@ -163,7 +163,7 @@ class HLM(HM):
                                  mu=gamma[self._beta_idx], sd=tau_b,
                                  shape=len(self._beta_idx))
 
-            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1., shape=2)
+            l_tau = pm.InverseGamma("tau_l", alpha=5., beta=1.)
             if self.family == Family.gaussian:
                 l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
                 sd = pm.HalfNormal("sd", sd=0.5)

@@ -77,7 +77,7 @@ class HLM(HM):
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
-                l = pm.Lognormal("l", mu=1, sd=0.25, shape=self.n_interventions)
+                l = pm.Lognormal("l", mu=1, sd=l_tau, shape=self.n_interventions)
                 pm.Poisson(
                   "x",
                   mu=self.link(beta[self._gene_cond_data_idx]) *
@@ -104,12 +104,11 @@ class HLM(HM):
                          var=tt.switch(tt.min(p) < 0.05, -np.inf, 0))
             z = pm.Categorical("z", p=p, shape=self.n_genes)
 
-            tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
+            tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=2)
             mean_g = pm.Normal("mu_g", mu=np.array([-1., 0.]), sd=0.5, shape=2)
             pm.Potential(
               "m_opot", var=tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0))
-            gamma = pm.Normal(
-              "gamma", mean_g[z], tau_g, shape=self.n_genes)
+            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
 
             tau_b = pm.InverseGamma("tau_b", alpha=4., beta=1., shape=1)
             if self.n_conditions == 1:
@@ -130,7 +129,7 @@ class HLM(HM):
                   sd=sd,
                   observed=np.squeeze(self.data[READOUT].values))
             else:
-                l = pm.Lognormal("l", mu=1, sd=0.25, shape=self.n_interventions)
+                l = pm.Lognormal("l", mu=1, sd=l_tau, shape=self.n_interventions)
                 pm.Poisson(
                   "x",
                   mu=self.link(beta[self._gene_cond_data_idx]) *
@@ -185,7 +184,7 @@ class HLM(HM):
         with model:
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, beta, l_tau, l, sd])
+                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
             else:
                 self._continuous_step = self.sampler([
                     tau_g, mean_g, gamma, tau_b, beta, l_tau, l])

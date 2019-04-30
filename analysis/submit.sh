@@ -1,17 +1,29 @@
 #!/usr/bin/env bash
 
-#bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm --ntune 15000 --nsample 10000 --ninit 10000 ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm/model
-#bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_independent_l --ntune 15000 --nsample 10000 --ninit 10000 ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_independent/model
-#bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_no_clustering --ntune 15000 --nsample 10000 --ninit 10000 ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_no_clust/model
-#bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_no_clustering_independent_l --ntune 15000 --nsample 10000 --ninit 10000 ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_independent_no_clust/model
+python run_shm.py \
+    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
+    ../results/mrf_model_small \
+    --family gaussian \
+    --ntune 50 \
+    --ndraw 50 \
+    --model mrf \
+    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 
 
-bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm --ntune 20000 --nsample 10000 --ninit 10000 --normalize \
-    ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_normalize/model
-bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_independent_l --ntune 20000 --nsample 10000 --normalize \
-    --ninit 10000 ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_independent_normalize/model
-bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_no_clustering --ntune 20000 --nsample 10000 --ninit 10000 --normalize \
-    ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_no_clust_normalize/model
-bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python shm.py --model-type shm_no_clustering_independent_l --ntune 20000 --nsample 10000 --ninit 10000 --normalize \
-    ../data_raw/read_counts-normalized.tsv /cluster/home/simondi/bewi/members/simondi/data/cellline/shm_analysis/shm_independent_no_clust_normalize/model
+python run_shm.py \
+    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
+    ../results/clustering_model_small \
+    --family gaussian \
+    --ntune 50 \
+    --ndraw 50 \
+    --model clustering \
+    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 
+python run_shm.py \
+    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
+    ../results/simple_model_small \
+    --family gaussian \
+    --ntune 50 \
+    --ndraw 50 \
+    --model simple \
+    --graph ../data_raw/easy_simulated_data/small-graph.tsv

@@ -89,8 +89,8 @@ class BinaryMRF(Discrete):
         return loglik[:, 1] - loglik[:, 0]
 
     def _loglik(self, gamma, mu, tau):
-        neg = scipy.log2(scipy.stats.norm.pdf(gamma, mu[0], tau))
-        pos = scipy.log2(scipy.stats.norm.pdf(gamma, mu[1], tau))
+        neg = scipy.log2(scipy.stats.norm.pdf(gamma, mu[0], tau[0]))
+        pos = scipy.log2(scipy.stats.norm.pdf(gamma, mu[1], tau[1]))
         return scipy.column_stack((neg, pos))
 
     def _repr_latex_(self, name=None, dist=None):

@@ -11,7 +11,6 @@ function test_run {
 	    --model mrf \
 	    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 
-
 	bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
 	    ../results/clustering_model_small \
@@ -31,7 +30,6 @@ function test_run {
 	    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 }
 
-
 function submit_run {
 	python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
@@ -41,7 +39,6 @@ function submit_run {
 	    --ndraw 50 \
 	    --model mrf \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
-
 
 	python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \

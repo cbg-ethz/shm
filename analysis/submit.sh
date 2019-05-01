@@ -2,27 +2,28 @@
 
 
 function test_run {
-	bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	echo "Running tests"
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
-	    ../results/mrf_model_small \
+	    /cluster/home/simondi/simondi/data/shm/mrf_model_small \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
 	    --model mrf \
 	    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 
-	bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
-	    ../results/clustering_model_small \
+	    /cluster/home/simondi/simondi/data/shm/clustering_model_small \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
 	    --model clustering \
 	    --graph ../data_raw/easy_simulated_data/small-graph.tsv
 
-	bsub -W 24:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/small-simulated_data.tsv \
-	    ../results/simple_model_small \
+	    /cluster/home/simondi/simondi/data/shm/simple_model_small \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
@@ -31,27 +32,28 @@ function test_run {
 }
 
 function submit_run {
-	python run_shm.py \
+	echo "Submitting jobs"
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/mrf_model_small \
+	    ../results/mrf_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
 	    --model mrf \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
 
-	python run_shm.py \
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/clustering_model_small \
+	    ../results/clustering_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
 	    --model clustering \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
 
-	python run_shm.py \
+	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/simple_model_small \
+	    ../results/simple_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
@@ -69,7 +71,7 @@ function usage {
 if [ $# -eq 0 ]; then
    usage
 elif [ $1 == "test" ]; then
-   echo "t"
+   test_run
 elif [ $1 == "submit" ]; then
-   echo "su"
+   submit_run
 fi

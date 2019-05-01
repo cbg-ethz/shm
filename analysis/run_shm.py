@@ -10,7 +10,6 @@ import pymc3 as pm
 import scipy as sp
 from matplotlib import pyplot as plt
 from pymc3 import model_to_graphviz
-from sklearn.preprocessing import LabelEncoder
 
 from shm.family import Family
 from shm.globals import GENE

@@ -35,7 +35,7 @@ function submit_run {
 	echo "Submitting jobs"
 	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/mrf_model \
+	    /cluster/home/simondi/simondi/data/shm/mrf_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
@@ -44,7 +44,7 @@ function submit_run {
 
 	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/clustering_model \
+	    /cluster/home/simondi/simondi/data/shm/clustering_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \
@@ -53,7 +53,7 @@ function submit_run {
 
 	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
-	    ../results/simple_model \
+	    /cluster/home/simondi/simondi/data/shm/simple_model \
 	    --family gaussian \
 	    --ntune 50 \
 	    --ndraw 50 \

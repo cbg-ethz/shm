@@ -181,7 +181,6 @@ def run(infile, outfile, family, model, ntune, ndraw, graph):
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=4, seed=23)
 
-    print(trace['z'])
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
      # _plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
      #       model_type, keep_burnin, read_counts)

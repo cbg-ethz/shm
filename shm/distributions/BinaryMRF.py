@@ -6,6 +6,8 @@ import networkx
 import numpy
 from pymc3 import Discrete
 
+from shm.globals import ESSENTIAL, NON_ESSENTIAL
+
 
 class BinaryMRF(Discrete):
     def __init__(self, G, node_labels=None, *args, **kwargs):
@@ -24,7 +26,7 @@ class BinaryMRF(Discrete):
         self.__n = len(self.__node_labels)
         super(BinaryMRF, self).__init__(shape=self.__n, *args, **kwargs)
 
-        self.mode = scipy.repeat(1, self.__n)
+        self.mode = scipy.repeat(NON_ESSENTIAL, self.__n)
         self.__choice = scipy.stats.bernoulli.rvs
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
         self.__blanket = {}
@@ -36,6 +38,9 @@ class BinaryMRF(Discrete):
     @property
     def node_labels(self):
         return self.__node_labels
+
+    def logp(self, value):
+        return 0
 
     def random(self, point=None):
         next_point = numpy.zeros(self.n_nodes)
@@ -52,22 +57,31 @@ class BinaryMRF(Discrete):
         self.__point = next_point.astype(numpy.int64)
         return self.__point
 
-    def logp(self, value):
-        return 0
+    def _log_node_potentials(self, gamma, mu, tau):
+        loglik = self._loglik(gamma, mu, tau)
+        return loglik[:, ESSENTIAL] - loglik[:, NON_ESSENTIAL]
 
     def _gibbs(self, idx, point, node_potentials=None):
-        edge_pot = self._log_edge_potential(point, idx)
         node_pot = self._log_node_potential(node_potentials, idx)
-        # TODO bug here: this cannot be 2*edge pot
-        p = scipy.special.expit(2 * edge_pot + node_pot)
+        edge_pot = self._log_edge_potential(point, idx)
+        p = scipy.special.expit(edge_pot + node_pot)
         return self.__choice(p)
 
+    def _log_node_potential(self, node_potentials, idx):
+        if node_potentials is None:
+            return 0
+        return node_potentials[idx]
+
     def _log_edge_potential(self, point, idx):
+        """Parameterization of edge potentials can be taken either from
+        1) Murphy - Machine learning
+        2) Marin - Bayesian essentials in R
+        """
         mb = self._markov_blank(idx)
         point_label, blanket_labs = point[idx], point[mb]
         mb_weights = self.__adj[mb, idx]
-        s1 = numpy.sum((blanket_labs == point_label) * mb_weights)
-        s2 = numpy.sum((blanket_labs != point_label) * mb_weights)
+        s1 = numpy.sum((blanket_labs == ESSENTIAL) * mb_weights)
+        s2 = numpy.sum((blanket_labs != ESSENTIAL) * mb_weights)
         return s1 - s2
 
     def _markov_blank(self, idx):
@@ -79,23 +93,14 @@ class BinaryMRF(Discrete):
         self.__blanket[idx] = blanket
         return blanket
 
-    def _log_node_potential(self, node_potentials, idx):
-        if node_potentials is None:
-            return 0
-        return node_potentials[idx]
-
-    def _log_node_potentials(self, gamma, mu, tau):
-        loglik = self._loglik(gamma, mu, tau)
-        return loglik[:, 1] - loglik[:, 0]
-
     def _loglik(self, gamma, mu, tau):
         if len(tau) == 2:
-            tau_0, tau_1 = tau[0], tau[1]
+            tau_0, tau_1 = tau[NON_ESSENTIAL], tau[ESSENTIAL]
         else:
             tau_0, tau_1 = tau, tau
-        neg = scipy.log2(scipy.stats.norm.pdf(gamma, mu[0], tau_0))
-        pos = scipy.log2(scipy.stats.norm.pdf(gamma, mu[1], tau_1))
-        return scipy.column_stack((neg, pos))
+        non = scipy.log2(scipy.stats.norm.pdf(gamma, mu[NON_ESSENTIAL], tau_0))
+        ess = scipy.log2(scipy.stats.norm.pdf(gamma, mu[ESSENTIAL], tau_1))
+        return scipy.column_stack((non, ess))
 
     def _repr_latex_(self, name=None, dist=None):
         name = r'\text{%s}' % name

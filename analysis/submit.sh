@@ -33,30 +33,30 @@ function test_run {
 
 function submit_run {
 	echo "Submitting jobs"
-	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	bsub -W 24:00 -n 4 -R "rusage[mem=25000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
 	    /cluster/home/simondi/simondi/data/shm/mrf_model \
 	    --family gaussian \
-	    --ntune 50 \
-	    --ndraw 50 \
+	    --ntune 50000 \
+	    --ndraw 50000 \
 	    --model mrf \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
 
-	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	bsub -W 24:00 -n 4 -R "rusage[mem=25000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
 	    /cluster/home/simondi/simondi/data/shm/clustering_model \
 	    --family gaussian \
-	    --ntune 50 \
-	    --ndraw 50 \
+	    --ntune 50000 \
+	    --ndraw 50000 \
 	    --model clustering \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
 
-	bsub -W 4:00 -n 4 -R "rusage[mem=15000]" python run_shm.py \
+	bsub -W 24:00 -n 4 -R "rusage[mem=25000]" python run_shm.py \
 	    ../data_raw/easy_simulated_data/simulated_data.tsv \
 	    /cluster/home/simondi/simondi/data/shm/simple_model \
 	    --family gaussian \
-	    --ntune 50 \
-	    --ndraw 50 \
+	    --ntune 50000 \
+	    --ndraw 50000 \
 	    --model simple \
 	    --graph ../data_raw/easy_simulated_data/graph.tsv
 }

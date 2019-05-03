@@ -7,6 +7,8 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import arviz as az
 
+from shm.globals import READOUT
+
 sns.set_style(
   "white",
   {
@@ -108,15 +110,12 @@ def _to_df(trace, var_name, idx):
     return frame
 
 
-def plot_trace(trace, var_name, ntune, keep_burnin, idx, title):
+def plot_trace(trace, var_name, idx, title):
     frame = _to_df(trace, var_name, idx)
 
     fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
     sns.lineplot(x="idxx", y="sample", data=frame, hue='Chain',
                  palette=sns.cubehelix_palette(4, start=.5, rot=-.75))
-    if keep_burnin:
-        plt.axvline(ntune, linestyle='--', linewidth=.5, color="grey")
-        plt.annotate("Burn-in", (ntune, 0))
     plt.legend(title='Chain', bbox_to_anchor=(.95, 0.5), loc="center left",
                frameon=False, labels=['1', '2', '3', '4'])
     plt.xlabel("")
@@ -126,19 +125,17 @@ def plot_trace(trace, var_name, ntune, keep_burnin, idx, title):
     return fig, ax
 
 
-def plot_hist(trace, var_name, ntune, keep_burnin, idx, title):
+def plot_hist(trace, var_name, idx, title):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
 
     fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
     cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
-    if not keep_burnin:
-        ntune = 0
-    ax.hist(fr[ntune:, 0], 50, color=cols[0], label="1", alpha=.75)
-    ax.hist(fr[ntune:, 1], 50, color=cols[1], label="2", alpha=.75)
-    ax.hist(fr[ntune:, 2], 50, color=cols[2], label="3", alpha=.75)
-    ax.hist(fr[ntune:, 3], 50, color=cols[3], label="4", alpha=.75)
+    ax.hist(fr[:, 0], 50, color=cols[0], label="1", alpha=.75)
+    ax.hist(fr[:, 1], 50, color=cols[1], label="2", alpha=.75)
+    ax.hist(fr[:, 2], 50, color=cols[2], label="3", alpha=.75)
+    ax.hist(fr[:, 3], 50, color=cols[3], label="4", alpha=.75)
 
     leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),
                      loc="center left", frameon=False)
@@ -193,15 +190,12 @@ def _extract(trace):
     return diverging_mask, var_names, _posterior
 
 
-def plot_parallel(trace, ntune, nsample, keep_burnin):
+def plot_parallel(trace):
     diverging_mask, var_names, _posterior = _extract(trace)
     var_names = [var.replace("\n", " ") for var in var_names]
 
-    if not keep_burnin:
-        ntune = 0
-    n_all = ntune + np.maximum(100, nsample) - 1
-    diverging_mask = diverging_mask[ntune:]
-    _posterior = _posterior[:, ntune:]
+    diverging_mask = diverging_mask
+    _posterior = _posterior
 
     fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025, lw=.25)
@@ -220,9 +214,9 @@ def plot_parallel(trace, ntune, nsample, keep_burnin):
     return fig, ax
 
 
-def plot_data(read_counts):
+def plot_data(data):
     fig, ax = plt.subplots(figsize=(7, 4))
-    plt.hist(read_counts["counts"].values, bins=200, color="darkgrey",
+    plt.hist(data[READOUT].values, bins=200, color="darkgrey",
              density=True, edgecolor='black')
     ax.set_xlim([-.5, .5])
     ax.set_xlabel(r"Log fold-change")
@@ -233,12 +227,12 @@ def plot_data(read_counts):
     return fig, ax
 
 
-def plot_posterior(readcounts ,ppc_trace):
+def plot_posterior(data, ppc_trace):
     fig, ax = plt.subplots(figsize=(7, 4))
-    ax.hist(readcounts["counts"].values, bins=200, lw=2,
+    ax.hist(data[READOUT].values, bins=200, lw=2,
             density=True, edgecolor='black', histtype='step', label='Data')
     ax.hist(ppc_trace['x'], bins=200, density=True, lw=2,
-            histtype='step', label='Posterior predictive distribution');
+            histtype='step', label='Posterior predictive distribution')
     ax.set_xlim([-.5, .5])
     ax.set_xlabel(r"Log fold-change")
     ax.set_ylabel(r"Density")

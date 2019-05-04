@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import warnings
 
+import warnings
 import arviz as az
+import logging
 import click
 import networkx
 import numpy
@@ -21,14 +22,11 @@ from shm.plot import (
 )
 
 warnings.filterwarnings("ignore")
-
-import logging
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[logging.StreamHandler()])
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-
+logger = logging.getLogger("pymc3")
+logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 def _load_data(infile, family):
     dat = pd.read_csv(infile, sep="\t")

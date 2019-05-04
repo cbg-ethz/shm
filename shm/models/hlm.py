@@ -13,7 +13,8 @@ from shm.models.hm import HM
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
-logging.getLogger().addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 
 class HLM(HM):

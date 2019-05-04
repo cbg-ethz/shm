@@ -13,6 +13,8 @@ from shm.model import Model
 from shm.sampler import Sampler
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 
 class HM(ABC):
@@ -124,7 +126,7 @@ class HM(ABC):
             logger.info("Building cluster hierarchical model")
             self._set_clustering_model()
         elif model == Model.simple:
-            logger.info("Building eimple hierarchical model")
+            logger.info("Building simple hierarchical model")
             self._set_simple_model()
         else:
             raise ValueError("Model not supported")

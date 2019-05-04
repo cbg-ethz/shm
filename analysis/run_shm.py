@@ -154,7 +154,12 @@ def _plot(model, trace, outfile, genes, gene_conds, n_tune, n_sample,
             logger.error("Error with some plot: {}\n".format(str(e)))
 
 
-@click.command()
+@click.group()
+def cli():
+    pass
+
+
+@cli.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
 @click.option('--family',
@@ -184,7 +189,7 @@ def sample(infile, outfile, family, model, ntune, ndraw, graph):
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
 
 
-@click.command()
+@cli.command()
 @click.argument("infile", type=str)
 @click.argument("outfile", type=str)
 @click.option('--family',
@@ -212,12 +217,6 @@ def plot(infile, outfile, family, model, ntune, ndraw, graph):
         trace = pm.load_trace(outfile + "_trace", model = model.model)
         #plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
         #     model_type, read_counts)
-
-
-@click.group()
-def cli():
-    pass
-
 
 if __name__ == "__main__":
     cli()

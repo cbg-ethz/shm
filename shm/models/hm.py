@@ -141,26 +141,53 @@ class HM(ABC):
     def _set_mrf_model(self):
         pass
 
+    @property
+    def _index_to_gene(self):
+        return self.__index_to_gene
+
+    @property
+    def _index_to_condition(self):
+        return self.__index_to_con
+
+    @property
+    def _beta_index_to_gene(self):
+        return self.__beta_idx_to_gene
+
+    @property
+    def _beta_index_to_condition(self):
+        return self.__beta_idx_to_con
+
     def _set_data(self):
         data = self.__data
         self.__n, _ = data.shape
         le = LabelEncoder()
 
-        self.__genes = sp.unique(data[GENE].values)
         self.__gene_data_idx = le.fit_transform(data[GENE].values)
+        self.__index_to_gene = {i: e for i, e in zip(
+          self.__gene_data_idx, data[GENE].values )}
+        self.__genes = sp.unique(list(self.__index_to_gene.values()))
         self.__len_genes = len(self.__genes)
 
-        self.__conditions = sp.unique(data[CONDITION].values)
         self.__con_data_idx = le.fit_transform(data[CONDITION].values)
+        self.__index_to_con = {i: e for i, e in zip(
+          self.__con_data_idx, data[CONDITION].values)}
+        self.__conditions = sp.unique(list(self.__index_to_con.values()))
         self.__len_conds = len(self.__conditions)
 
-        self.__intrs = sp.unique(data[INTERVENTION].values)
         self.__intrs_data_idx = le.fit_transform(data[INTERVENTION].values)
+        self.__index_to_con = {i: e for i, e in zip(
+          self.__intrs_data_idx, data[INTERVENTION].values)}
+        self.__intrs = sp.unique(data[INTERVENTION].values)
         self.__len_intrs = len(self.__intrs)
 
         self.__beta_idx = sp.repeat(sp.unique(self.__gene_data_idx),
                                     len(self.__conditions))
+        self.__beta_idx_to_gene = {i: self.__index_to_gene[i]
+                                   for i in self.__gene_data_idx}
+        self.__beta_idx_to_con = {i: self.__index_to_con[i]
+                                  for i in self.__con_data_idx}
 
         self.__gene_cond_data_idx = le.fit_transform(
           ["{}-{}".format(g, c)
            for g, c in zip(self.__gene_data_idx, self.__con_data_idx)])
+        pass

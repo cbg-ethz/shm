@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import itertools
 import networkx
 import pandas as pd
 import numpy as np
@@ -28,9 +27,9 @@ G = networkx.read_edgelist(
 essential_genes = np.array(list(genes[:4]) +
                            ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
 
-
-neighbors = list(
-  itertools.chain(networkx.neighbors(G, c) for c in essential_genes))
+neighbors = []
+for c in essential_genes:
+    neighbors += networkx.neighbors(G, c)
 G = G.subgraph(np.sort(np.unique(neighbors)))
 
 np.random.seed(42)
@@ -49,9 +48,8 @@ def get_gamma(n_essential, n_nonessential,
     return gamma, gamma_essential, gamma_nonessential
 
 
-def write_file(gamma_essential, gamma_nonessential,
-               gamma, beta, l, data, count_table,
-               suffix):
+def write_file(genes, gamma_essential, gamma_nonessential,
+               gamma, beta, l, data, count_table, suffix):
     count_table.to_csv(
       os.path.join(outpath, "easy_simulated_data",
                    "{}simulated_data.tsv".format(suffix)),
@@ -66,8 +64,9 @@ def write_file(gamma_essential, gamma_nonessential,
 
     data = {
         "graph": G_filtered,
-        "essential_genes": essential_genes,
-        "nonessential_genes": nonessential_genes,
+        "genes": genes,
+        "essential_genes": genes[:len(gamma_nonessential)],
+        "nonessential_genes": genes[len(gamma_nonessential):],
         "gamma_tau": gamma_tau,
         "gamma_tau_non_essential": gamma_tau_non_essential,
         "gamma_essential": gamma_essential,
@@ -87,7 +86,7 @@ def write_file(gamma_essential, gamma_nonessential,
         pickle.dump(data, out)
 
 
-def build_data(n_essential, n_nonessential, suffix):
+def build_data(n_essential, n_nonessential, suffix, with_interventions):
     n_genes = n_essential + n_nonessential
     genes = filter_genes[:n_genes]
     gamma, gamma_essential, gamma_nonessential = get_gamma(
@@ -98,10 +97,8 @@ def build_data(n_essential, n_nonessential, suffix):
     replicates = ["R" + str(i) for i in range(n_replicates)]
 
     combinations = [(g, c, s, r)
-                    for g in genes
-                    for c in conditions
-                    for s in sgrnas
-                    for r in replicates]
+                    for g in genes for c in conditions
+                    for s in sgrnas for r in replicates]
 
     count_table = pd.DataFrame(
       combinations, columns=["genes", "conditions", "sgrnas", "replicates"])
@@ -120,9 +117,10 @@ def build_data(n_essential, n_nonessential, suffix):
 
     beta = st.norm.rvs(np.repeat(gamma, n_conditions), beta_tau)
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
-    data = st.norm.rvs(
-      l[count_table["sgrnas"]] + beta[count_table["conditions"]],
-      data_tau)
+    if not with_interventions:
+        l[:] = 0
+    data = st.norm.rvs(l[count_table["sgrnas"]] +
+                       beta[count_table["conditions"]], data_tau)
 
     count_table = pd.DataFrame(
       combinations,
@@ -137,7 +135,7 @@ def build_data(n_essential, n_nonessential, suffix):
       n_replicates)
     count_table.intervention = sgrna_ids
 
-    write_file(gamma_essential, gamma_nonessential,
+    write_file(genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, data,
                count_table, suffix)
 
@@ -145,9 +143,9 @@ def build_data(n_essential, n_nonessential, suffix):
 def build_large_data():
     n_essential = len(essential_genes)
     n_nonessential = len(nonessential_genes)
-    build_data(n_essential, n_nonessential, "")
+    build_data(n_essential, n_nonessential, "", True)
 
 
 if __name__ == "__main__":
-    build_data(1, 1, "small-")
+    build_data(1, 1, "small-", with_interventions=False)
     # build_large_data()

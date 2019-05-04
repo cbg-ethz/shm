@@ -156,8 +156,8 @@ class HM(ABC):
         return self.__beta_idx_to_gene
 
     @property
-    def _beta_index_to_condition(self):
-        return self.__beta_idx_to_con
+    def _beta_idx_to_gene_cond(self):
+        return self.__beta_idx_to_gene_cond
 
     def _set_data(self):
         data = self.__data
@@ -166,7 +166,7 @@ class HM(ABC):
 
         self.__gene_data_idx = le.fit_transform(data[GENE].values)
         self.__index_to_gene = {i: e for i, e in zip(
-          self.__gene_data_idx, data[GENE].values )}
+          self.__gene_data_idx, data[GENE].values)}
         self.__genes = sp.unique(list(self.__index_to_gene.values()))
         self.__len_genes = len(self.__genes)
 
@@ -177,7 +177,7 @@ class HM(ABC):
         self.__len_conds = len(self.__conditions)
 
         self.__intrs_data_idx = le.fit_transform(data[INTERVENTION].values)
-        self.__index_to_con = {i: e for i, e in zip(
+        self.__index_to_intervention = {i: e for i, e in zip(
           self.__intrs_data_idx, data[INTERVENTION].values)}
         self.__intrs = sp.unique(data[INTERVENTION].values)
         self.__len_intrs = len(self.__intrs)
@@ -185,11 +185,13 @@ class HM(ABC):
         self.__beta_idx = sp.repeat(sp.unique(self.__gene_data_idx),
                                     len(self.__conditions))
         self.__beta_idx_to_gene = {i: self.__index_to_gene[i]
-                                   for i in self.__gene_data_idx}
-        self.__beta_idx_to_con = {i: self.__index_to_con[i]
-                                  for i in self.__con_data_idx}
+                                   for i in self.__beta_idx}
 
-        self.__gene_cond_data_idx = le.fit_transform(
-          ["{}-{}".format(g, c)
-           for g, c in zip(self.__gene_data_idx, self.__con_data_idx)])
+        self.__gene_cond_data = ["{}-{}".format(g, c)
+           for g, c in zip(data[GENE].values, data[CONDITION].values)]
+        self.__gene_cond_data_idx = le.fit_transform(self.__gene_cond_data)
+        self.__beta_idx_to_gene_cond = {
+            i: e for i, e in zip(self.__gene_cond_data_idx,
+                                 self.__gene_cond_data)
+        }
         pass

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import os
+import itertools
 import networkx
 import pandas as pd
 import numpy as np
@@ -8,6 +10,7 @@ import scipy.stats as st
 from sklearn import preprocessing
 import pickle
 
+outpath = os.path.join("..", "data_raw")
 gamma_tau = .25
 beta_tau = .25
 l_tau = .25
@@ -15,19 +18,19 @@ data_tau = .25
 gamma_tau_non_essential = .1
 n_conditions, n_sgrnas, n_replicates = 5, 5, 5
 
-data = pd.read_csv("../data_raw/gene_summary.tsv", sep="\t")
+data = pd.read_csv(os.path.join(outpath, "gene_summary.tsv"), sep="\t")
 genes = data.id.values
 G = networkx.read_edgelist(
   "../data_raw/mouse_gene_network.tsv",
   delimiter="\t",
   data=(('weight', float),),
   nodetype=str)
-essential_genes = np.array(list(genes[:4]) + \
+essential_genes = np.array(list(genes[:4]) +
                            ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
 
-neighbors = []
-for c in essential_genes:
-    neighbors += networkx.neighbors(G, c)
+
+neighbors = list(
+  itertools.chain(networkx.neighbors(G, c) for c in essential_genes))
 G = G.subgraph(np.sort(np.unique(neighbors)))
 
 np.random.seed(42)
@@ -44,6 +47,44 @@ def get_gamma(n_essential, n_nonessential,
                                           size=n_nonessential)
     gamma = sp.append(gamma_essential, gamma_nonessential)
     return gamma, gamma_essential, gamma_nonessential
+
+
+def write_file(gamma_essential, gamma_nonessential,
+               gamma, beta, l, data, count_table,
+               suffix):
+    count_table.to_csv(
+      os.path.join(outpath, "easy_simulated_data",
+                   "{}simulated_data.tsv".format(suffix)),
+      index=False, sep="\t")
+
+    G_filtered = G.subgraph(genes)
+    networkx.readwrite.edgelist.write_weighted_edgelist(
+      G_filtered,
+      os.path.join(outpath, "easy_simulated_data",
+                   "{}graph.tsv".format(suffix)),
+      delimiter="\t")
+
+    data = {
+        "graph": G_filtered,
+        "essential_genes": essential_genes,
+        "nonessential_genes": nonessential_genes,
+        "gamma_tau": gamma_tau,
+        "gamma_tau_non_essential": gamma_tau_non_essential,
+        "gamma_essential": gamma_essential,
+        "gamma_nonessential": gamma_nonessential,
+        "gamma": gamma,
+        "beta_tau": beta_tau,
+        "beta": beta,
+        "l_tau": l_tau,
+        "l": l,
+        "data_tau": data_tau,
+        "data": data,
+        "count_table": count_table
+    }
+    picklepath = os.path.join(outpath, "easy_simulated_data",
+                              "{}data.pickle".format(suffix))
+    with open(picklepath, "wb") as out:
+        pickle.dump(data, out)
 
 
 def build_data(n_essential, n_nonessential, suffix):
@@ -96,36 +137,9 @@ def build_data(n_essential, n_nonessential, suffix):
       n_replicates)
     count_table.intervention = sgrna_ids
 
-    count_table.to_csv(
-      "../data_raw/easy_simulated_data/{}simulated_data.tsv".format(suffix),
-      index=False, sep="\t")
-
-    G_filtered = G.subgraph(genes)
-    networkx.readwrite.edgelist.write_weighted_edgelist(
-      G_filtered, "../data_raw/easy_simulated_data/{}graph.tsv".format(suffix),
-      delimiter="\t")
-
-    data = {
-        "graph": G_filtered,
-        "essential_genes": essential_genes,
-        "nonessential_genes": nonessential_genes,
-        "gamma_tau": gamma_tau,
-        "gamma_tau_non_essential": gamma_tau_non_essential,
-        "gamma_essential": gamma_essential,
-        "gamma_nonessential": gamma_nonessential,
-        "gamma": gamma,
-        "beta_tau": beta_tau,
-        "beta": beta,
-        "l_tau": l_tau,
-        "l": l,
-        "data_tau": data_tau,
-        "data": data,
-        "count_table": count_table
-    }
-
-    with open("../data_raw/easy_simulated_data/{}data.pickle".format(suffix),
-              "wb") as out:
-        pickle.dump(data, out)
+    write_file(gamma_essential, gamma_nonessential,
+               gamma, beta, l, data,
+               count_table, suffix)
 
 
 def build_large_data():
@@ -136,4 +150,4 @@ def build_large_data():
 
 if __name__ == "__main__":
     build_data(1, 1, "small-")
-    #build_large_data()
+    # build_large_data()

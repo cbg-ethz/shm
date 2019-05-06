@@ -23,7 +23,8 @@ class RandomFieldGibbs(ArrayStep):
         mu_g = point['mu_g']
         tau_g = np.exp(point['tau_g_log__'])
         gamma = point['gamma']
-        point[self.__var_name] = \
+        point['z'] = \
             self.__var.distribution.posterior_sample(z, gamma, mu_g, tau_g)
+        print(point['z'])
         return point
 

@@ -194,4 +194,3 @@ class HM(ABC):
             i: e for i, e in zip(self.__gene_cond_data_idx,
                                  self.__gene_cond_data)
         }
-        pass

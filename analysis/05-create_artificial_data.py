@@ -10,10 +10,10 @@ from sklearn import preprocessing
 import pickle
 
 outpath = os.path.join("..", "data_raw")
-gamma_tau = .25
-beta_tau = .25
-l_tau = .25
-data_tau = .25
+gamma_tau = 0
+beta_tau = .1
+l_tau = .1
+data_tau = .1
 gamma_tau_non_essential = .1
 n_conditions, n_sgrnas, n_replicates = 5, 5, 5
 

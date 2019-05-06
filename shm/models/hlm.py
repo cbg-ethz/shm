@@ -42,21 +42,21 @@ class HLM(HM):
     def _steps(self):
         return self.__steps
 
-    def sample(self, draws=1000, tune=1000, chains=None, cores=None, seed=23):
+    def sample(self, draws=1000, tune=1000, chains=1, cores=1, seed=23):
         with self.model:
             logger.info("Sampling {}/{} times".format(draws, tune))
             trace = pm.sample(
-              draws=draws, tune=tune, chains=chains, cores=cores,
+              draws=draws, tune=tune, chains=4, cores=1,
               step=self._steps, random_seed=seed, progressbar=False)
         return trace
 
     def _set_mrf_model(self):
         with pm.Model() as model:
             z = BinaryMRF('z', G=self.graph, node_labels=self.node_labels)
-            tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=2)
+            tau_g = pm.InverseGamma("tau_g", alpha=3., beta=1., shape=2)
             mean_g = pm.Normal("mu_g", mu=np.array([0., -1.]), sd=0.5, shape=2)
             pm.Potential(
-              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0, -np.inf, 0))
+              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0., -np.inf, 0.))
             gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
 
             tau_b = pm.InverseGamma("tau_b", alpha=4., beta=1., shape=1)
@@ -102,13 +102,13 @@ class HLM(HM):
         with pm.Model() as model:
             p = pm.Dirichlet("p", a=np.array([1., 1.]), shape=2)
             pm.Potential("p_pot",
-                         var=tt.switch(tt.min(p) < 0.05, -np.inf, 0))
+                         var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
             z = pm.Categorical("z", p=p, shape=self.n_genes)
 
-            tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=2)
+            tau_g = pm.InverseGamma("tau_g", alpha=3., beta=1., shape=2)
             mean_g = pm.Normal("mu_g", mu=np.array([-0., -1.]), sd=0.5, shape=2)
             pm.Potential(
-              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0, -np.inf, 0))
+              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0, -np.inf, 0.))
             gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
 
             tau_b = pm.InverseGamma("tau_b", alpha=4., beta=1., shape=1)

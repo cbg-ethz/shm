@@ -171,7 +171,7 @@ plot.igraph <- . %>%
 
   loc.dat <- dplyr::select(data, gene, pval) %>%
     dplyr::rename(genes = gene, data = pval)
-  correction     <- corrector(adj, loc.dat, theta=.1, niter=10000, seed=23)
+  correction     <- corrector(adj, loc.dat, theta=.1, niter=100, seed=23)
   data$predicted <- correction$labels
 
   pl.graph <- .plot.truth(graph, data, names = TRUE)

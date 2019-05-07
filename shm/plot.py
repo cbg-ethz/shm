@@ -57,45 +57,6 @@ def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel, x
     return fig, ax
 
 
-def plot_neff(trace, var_name, variable=None):
-    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
-    boundary = [0.1, 0.5, 1]
-    eff_samples = pd.DataFrame({
-        "neff": eff_samples[var_name].values / (len(trace) * 4),
-        "param": [var_name + str(i) for i in range(len(eff_samples))]})
-    if variable is not None:
-        eff_samples["param"] = variable
-    low = np.where(eff_samples["neff"].values < boundary[0])
-    mid = np.where(np.logical_and(
-      eff_samples["neff"].values >= boundary[0],
-      eff_samples["neff"].values < boundary[1]))
-    high = np.where(eff_samples["neff"].values >= boundary[1])
-
-    return _plot_dotline(eff_samples, boundary, "neff",
-                         low, mid, high,
-                         "n_eff / n", "Effective sample size", "n_eff / n", 0)
-
-
-def plot_rhat(trace, var_name, variable=None):
-    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
-    boundary = [1.05, 1.1, 1.5]
-    rhat_samples = pd.DataFrame({
-        "rhat": rhat_samples[var_name].values,
-        "param": [var_name + str(i) for i in range(len(rhat_samples))]})
-    if variable is not None:
-        rhat_samples["param"] = variable
-    low = np.where(rhat_samples["rhat"].values < boundary[0])
-    mid = np.where(np.logical_and(
-      rhat_samples["rhat"].values >= boundary[0],
-      rhat_samples["rhat"].values < boundary[1]))
-    high = np.where(rhat_samples["rhat"].values >= boundary[1])
-
-    return _plot_dotline(rhat_samples, boundary, "rhat",
-                         low, mid, high, r"\hat{R}",
-                         "Potential scale reduction factor", r"$\hat{R}$",
-                         xlim=1)
-
-
 def _to_df(trace, var_name, idx):
     n_chains = trace.nchains
     samples = trace.get_values(var_name)[:, idx]
@@ -108,43 +69,6 @@ def _to_df(trace, var_name, idx):
     })
 
     return frame
-
-
-def plot_trace(trace, var_name, idx, title):
-    frame = _to_df(trace, var_name, idx)
-
-    fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
-    sns.lineplot(x="idxx", y="sample", data=frame, hue='Chain',
-                 palette=sns.cubehelix_palette(4, start=.5, rot=-.75))
-    plt.legend(title='Chain', bbox_to_anchor=(.95, 0.5), loc="center left",
-               frameon=False, labels=['1', '2', '3', '4'])
-    plt.xlabel("")
-    plt.ylabel("")
-    plt.title(title, loc="Left")
-
-    return fig, ax
-
-
-def plot_hist(trace, var_name, idx, title):
-    fr = _to_df(trace, var_name, idx)
-    fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
-    fr = fr.values
-
-    fig, ax = plt.subplots(figsize=(7, 2.5), dpi=720)
-    cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
-    ax.hist(fr[:, 0], 50, color=cols[0], label="1", alpha=.75)
-    ax.hist(fr[:, 1], 50, color=cols[1], label="2", alpha=.75)
-    ax.hist(fr[:, 2], 50, color=cols[2], label="3", alpha=.75)
-    ax.hist(fr[:, 3], 50, color=cols[3], label="4", alpha=.75)
-
-    leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),
-                     loc="center left", frameon=False)
-    leg._legend_box.align = "left"
-    plt.xlabel("")
-    plt.ylabel("")
-    plt.title(title, loc="Left")
-
-    return fig, ax
 
 
 def _var_names(var_names, data):
@@ -190,6 +114,45 @@ def _extract(trace):
     return diverging_mask, var_names, _posterior
 
 
+def plot_neff(trace, var_name, variable=None):
+    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
+    boundary = [0.1, 0.5, 1]
+    eff_samples = pd.DataFrame({
+        "neff": eff_samples[var_name].values / (len(trace) * 4),
+        "param": [var_name + str(i) for i in range(len(eff_samples))]})
+    if variable is not None:
+        eff_samples["param"] = variable
+    low = np.where(eff_samples["neff"].values < boundary[0])
+    mid = np.where(np.logical_and(
+      eff_samples["neff"].values >= boundary[0],
+      eff_samples["neff"].values < boundary[1]))
+    high = np.where(eff_samples["neff"].values >= boundary[1])
+
+    return _plot_dotline(eff_samples, boundary, "neff",
+                         low, mid, high,
+                         "n_eff / n", "Effective sample size", "n_eff / n", 0)
+
+
+def plot_rhat(trace, var_name, variable=None):
+    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
+    boundary = [1.05, 1.1, 1.5]
+    rhat_samples = pd.DataFrame({
+        "rhat": rhat_samples[var_name].values,
+        "param": [var_name + str(i) for i in range(len(rhat_samples))]})
+    if variable is not None:
+        rhat_samples["param"] = variable
+    low = np.where(rhat_samples["rhat"].values < boundary[0])
+    mid = np.where(np.logical_and(
+      rhat_samples["rhat"].values >= boundary[0],
+      rhat_samples["rhat"].values < boundary[1]))
+    high = np.where(rhat_samples["rhat"].values >= boundary[1])
+
+    return _plot_dotline(rhat_samples, boundary, "rhat",
+                         low, mid, high, r"\hat{R}",
+                         "Potential scale reduction factor", r"$\hat{R}$",
+                         xlim=1)
+
+
 def plot_parallel(trace):
     diverging_mask, var_names, _posterior = _extract(trace)
     var_names = [var.replace("\n", " ") for var in var_names]
@@ -227,18 +190,15 @@ def plot_data(data):
     return fig, ax
 
 
-def plot_posterior(data, ppc_trace):
-    fig, ax = plt.subplots(figsize=(7, 4))
-    ax.hist(data[READOUT].values, bins=200, lw=2,
-            density=True, edgecolor='black', histtype='step', label='Data')
-    ax.hist(ppc_trace['x'], bins=200, density=True, lw=2,
-            histtype='step', label='Posterior predictive distribution')
-    ax.set_xlim([-.5, .5])
+def plot_posterior(data, ppc_trace, bins=50):
+    fig, ax = plt.subplots()
+    ax.hist(data[READOUT].values, bins=bins, lw=2, density=True,
+            edgecolor='black', histtype='step', label='Data')
+    ax.hist(np.mean(ppc_trace['x'], 0), bins=bins, density=True, lw=2,
+            label='Posterior predictive distribution')
     ax.set_xlabel(r"Log fold-change")
     ax.set_ylabel(r"Density")
     ax.xaxis.set_label_coords(.95, -0.115)
     ax.yaxis.set_label_coords(-0.075, .95)
-    ax.set_xlim([-.5, .5])
     ax.legend(frameon=False)
-
     return fig, ax

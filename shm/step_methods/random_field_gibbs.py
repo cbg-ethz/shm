@@ -25,6 +25,5 @@ class RandomFieldGibbs(ArrayStep):
         gamma = point['gamma']
         point['z'] = \
             self.__var.distribution.posterior_sample(z, gamma, mu_g, tau_g)
-        print(point['z'])
         return point
 

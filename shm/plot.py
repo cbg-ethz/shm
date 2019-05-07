@@ -20,8 +20,9 @@ sns.set_style(
 )
 
 
-def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel, xlim):
-    fig, ax = plt.subplots(figsize=(5, 3), dpi=720)
+def _plot_dotline(table, boundary, var, low, mid, high,
+                  legend, title, xlabel, xlim):
+    fig, ax = plt.subplots()
 
     plt.axvline(x=boundary[0], color="grey", linestyle="--", linewidth=.5)
     plt.axvline(x=boundary[1], color="grey", linestyle="--", linewidth=.5)
@@ -160,7 +161,7 @@ def plot_parallel(trace):
     diverging_mask = diverging_mask
     _posterior = _posterior
 
-    fig, ax = plt.subplots(figsize=(8, 4), dpi=720)
+    fig, ax = plt.subplots(dpi=720)
     ax.plot(_posterior[:, ~diverging_mask], color="black", alpha=0.025, lw=.25)
 
     if np.any(diverging_mask):
@@ -177,28 +178,41 @@ def plot_parallel(trace):
     return fig, ax
 
 
-def plot_data(data):
-    fig, ax = plt.subplots(figsize=(7, 4))
-    plt.hist(data[READOUT].values, bins=200, color="darkgrey",
-             density=True, edgecolor='black')
-    ax.set_xlim([-.5, .5])
-    ax.set_xlabel(r"Log fold-change")
-    ax.set_ylabel(r"Density")
-    ax.xaxis.set_label_coords(.95, -0.115)
-    ax.yaxis.set_label_coords(-0.075, .95)
+def plot_hist(trace, var_name, idx, title):
+    fr = _to_df(trace, var_name, idx)
+    fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
+    fr = fr.values
+
+    fig, ax = plt.subplots()
+    cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
+    ax.hist(fr[:, 0], 50, color=cols[0], label="1", alpha=.75)
+    ax.hist(fr[:, 1], 50, color=cols[1], label="2", alpha=.75)
+    ax.hist(fr[:, 2], 50, color=cols[2], label="3", alpha=.75)
+    ax.hist(fr[:, 3], 50, color=cols[3], label="4", alpha=.75)
+
+    leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),
+                     loc="center left", frameon=False)
+    leg._legend_box.align = "left"
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.title(title, loc="Left")
 
     return fig, ax
 
 
-def plot_posterior(data, ppc_trace, bins=50):
+def plot_steps(data, ppc_trace=None, bins=50):
     fig, ax = plt.subplots()
     ax.hist(data[READOUT].values, bins=bins, lw=2, density=True,
-            edgecolor='black', histtype='step', label='Data')
-    ax.hist(np.mean(ppc_trace['x'], 0), bins=bins, density=True, lw=2,
-            label='Posterior predictive distribution')
+            edgecolor='black', histtype='step',
+            label='Data')
+    if ppc_trace:
+        ax.hist(np.mean(ppc_trace['x'], 0), bins=bins, lw=2, density=True,
+                edgecolor='#316675', histtype='step',
+                label='Posterior predictive distribution')
     ax.set_xlabel(r"Log fold-change")
     ax.set_ylabel(r"Density")
     ax.xaxis.set_label_coords(.95, -0.115)
     ax.yaxis.set_label_coords(-0.075, .95)
-    ax.legend(frameon=False)
+    if ppc_trace:
+        ax.legend(frameon=False)
     return fig, ax

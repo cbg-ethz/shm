@@ -147,5 +147,5 @@ def build_large_data():
 
 
 if __name__ == "__main__":
-    build_data(1, 1, "small-", with_interventions=False)
-    # build_large_data()
+    #build_data(1, 1, "small-", with_interventions=False)
+    build_large_data()

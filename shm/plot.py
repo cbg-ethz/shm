@@ -178,6 +178,21 @@ def plot_parallel(trace):
     return fig, ax
 
 
+def plot_trace(trace, var_name, idx, title):
+    frame = _to_df(trace, var_name, idx)
+
+    fig, ax = plt.subplots(dpi=720)
+    sns.lineplot(x="idxx", y="sample", data=frame, hue='Chain',
+                 palette=sns.cubehelix_palette(4, start=.5, rot=-.75))
+    plt.legend(title='Chain', bbox_to_anchor=(.95, 0.5), loc="center left",
+               frameon=False, labels=['1', '2', '3', '4'])
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.title(title, loc="Left")
+
+    return fig, ax
+
+
 def plot_hist(trace, var_name, idx, title):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")

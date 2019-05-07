@@ -17,8 +17,8 @@ from shm.globals import GENE
 from shm.link import Link
 from shm.models.hlm import HLM
 from shm.plot import (
-    plot_trace, plot_rhat, plot_neff, plot_parallel,
-    plot_hist, plot_data, plot_posterior
+    plot_rhat, plot_neff, plot_parallel,
+    plot_hist
 )
 
 warnings.filterwarnings("ignore")

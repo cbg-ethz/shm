@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+
+import click
 import networkx
 import pandas as pd
 import numpy as np
@@ -140,12 +142,22 @@ def build_data(n_essential, n_nonessential, suffix, with_interventions):
                count_table, suffix)
 
 
-def build_large_data():
+def build_large_data(with_interventions):
     n_essential = len(essential_genes)
     n_nonessential = len(nonessential_genes)
-    build_data(n_essential, n_nonessential, "", True)
+    build_data(n_essential, n_nonessential, "", with_interventions)
+
+
+@click.command()
+@click.argument('size', type=click.Choice(["small", "large"]))
+@click.option("--with-interventions", is_flag=True)
+def run(size, with_interventions):
+    if size == "small":
+        build_data(1, 1, "small-", with_interventions=False)
+    else:
+        build_large_data(with_interventions)
 
 
 if __name__ == "__main__":
-    #build_data(1, 1, "small-", with_interventions=False)
-    build_large_data()
+    run()
+

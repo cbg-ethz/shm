@@ -168,8 +168,9 @@ def cli():
               default="simple")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
+@click.option("--nchain", type=int, default=4)
 @click.option("--graph", type=str, default=None)
-def sample(infile, outfile, family, model, ntune, ndraw, graph):
+def sample(infile, outfile, family, model, ntune, ndraw, nchain, graph):
     read_counts = _load_data(infile, family)
     link_function = Link.identity if family == "gaussian" else Link.log
     family = Family.gaussian if family == "gaussian" else Family.poisson
@@ -182,39 +183,10 @@ def sample(infile, outfile, family, model, ntune, ndraw, graph):
              sampler="nuts",
              graph=graph) as model:
         logger.info("Sampling")
-        trace = model.sample(draws=ndraw, tune=ntune, chains=4, seed=23)
+        trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
 
-
-@cli.command()
-@click.argument("infile", type=str)
-@click.argument("outfile", type=str)
-@click.option('--family',
-              type=click.Choice(["gaussian", "poisson"]),
-              default="gaussian")
-@click.option('--model',
-              type=click.Choice(["mrf", "clustering", "simple"]),
-              default="simple")
-@click.option("--ntune", type=int, default=50)
-@click.option("--ndraw", type=int, default=100)
-@click.option("--graph", type=str, default=None)
-def plot(infile, outfile, family, model, ntune, ndraw, graph):
-    read_counts = _load_data(infile, family)
-    link_function = Link.identity if family == "gaussian" else Link.log
-    family = Family.gaussian if family == "gaussian" else Family.poisson
-    graph, read_counts = _read_graph(graph, read_counts)
-
-    with HLM(data=read_counts,
-             family=family,
-             link_function=link_function,
-             model=model,
-             sampler="nuts",
-             graph=graph) as model:
-        logger.info("Plotting")
-        trace = pm.load_trace(outfile + "_trace", model = model.model)
-        #plot(model, trace, outfile, genes, gene_conds, ntune, nsample,
-        #     model_type, read_counts)
 
 if __name__ == "__main__":
     cli()

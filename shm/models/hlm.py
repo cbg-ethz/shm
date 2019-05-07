@@ -42,11 +42,11 @@ class HLM(HM):
     def _steps(self):
         return self.__steps
 
-    def sample(self, draws=1000, tune=1000, chains=1, cores=1, seed=23):
+    def sample(self, draws=1000, tune=1000, chains=None, seed=23):
         with self.model:
             logger.info("Sampling {}/{} times".format(draws, tune))
             trace = pm.sample(
-              draws=draws, tune=tune, chains=4, cores=1,
+              draws=draws, tune=tune, chains=chains, cores=1,
               step=self._steps, random_seed=seed, progressbar=False)
         return trace
 

@@ -215,14 +215,14 @@ def plot_hist(trace, var_name, idx, title):
     return fig, ax
 
 
-def plot_steps(data, ppc_trace=None, bins=50):
+def plot_steps(data, ppc_trace=None, bins=50, histtype="step"):
     fig, ax = plt.subplots()
     ax.hist(data[READOUT].values, bins=bins, lw=2, density=True,
-            edgecolor='black', histtype='step',
+            edgecolor='black', histtype=histtype, color='grey',
             label='Data')
     if ppc_trace:
         ax.hist(np.mean(ppc_trace['x'], 0), bins=bins, lw=2, density=True,
-                edgecolor='#316675', histtype='step',
+                edgecolor='#316675', histtype=histtype, color='grey',
                 label='Posterior predictive distribution')
     ax.set_xlabel(r"Log fold-change")
     ax.set_ylabel(r"Density")
@@ -231,3 +231,34 @@ def plot_steps(data, ppc_trace=None, bins=50):
     if ppc_trace:
         ax.legend(frameon=False)
     return fig, ax
+
+
+def plot_forest(trace, variable, var_name=None):
+    fig, ax = az.plot_forest(trace, var_names=variable, credible_interval=0.95)
+    ax[0].set_title('')
+    ax[0].set_title('95% credible intervals', size=15, loc="left")
+    ax[0].spines['left'].set_visible(True)
+    if var_name is not None:
+        ax[0].set_yticklabels(var_name)
+        ax[0].tick_params()
+    return fig, ax
+
+
+def plot_posterior_labels(trace, genes, cols=["#E84646", "#316675"]):
+    P1 = np.mean(trace['z'], 0)
+    P0 = 1 - P1
+    len_z = len(P1)
+    prob_table = pd.DataFrame({
+        "Probability": np.concatenate((P0, P1)),
+        "o": np.append(np.repeat("No-hit", len_z),
+                            np.repeat("Hit", len_z)),
+        "Gene": np.tile(genes, 2)})
+    ax = sns.barplot(x="Gene", y="Probability", hue="o",
+                     data=prob_table, palette=cols,
+                     linewidth=2.5, edgecolor=".2")
+    sns.despine()
+    plt.title('Posterior class label', loc='left', fontsize=16)
+    plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
+               borderpad=1, bbox_to_anchor=(1.5, 0.5), ncol=1)
+
+    return ax

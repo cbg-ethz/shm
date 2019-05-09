@@ -15,7 +15,7 @@ build/*
 dist/*
 plots/
 Rplots.pdf
-results/
 *egg*
 derby.log
 /docs/build
+results/

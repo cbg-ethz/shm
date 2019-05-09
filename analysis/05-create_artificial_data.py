@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
 import os
+import pickle
 
 import click
 import networkx
-import pandas as pd
 import numpy as np
+import pandas as pd
 import scipy as sp
 import scipy.stats as st
-from sklearn import preprocessing
-import pickle
 
 outpath = os.path.join("..", "data_raw")
 gamma_tau = .1
@@ -18,32 +17,6 @@ l_tau = .1
 data_tau = .1
 gamma_tau_non_essential = .1
 n_conditions, n_sgrnas, n_replicates = 2, 5, 5
-
-data = pd.read_csv(os.path.join(outpath, "gene_summary.tsv"), sep="\t")
-genes = data.id.values
-G = networkx.read_edgelist(
-  "../data_raw/mouse_gene_network.tsv",
-  delimiter="\t",
-  data=(('weight', float),),
-  nodetype=str)
-essential_genes = np.array(list(genes[:4]) +
-                           ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
-
-neighbors = []
-for c in essential_genes:
-    neighbors += networkx.neighbors(G, c)
-G = G.subgraph(np.sort(np.unique(neighbors)))
-
-np.random.seed(42)
-nonessential_genes = np.random.choice(list(G.nodes), size=9, replace=False)
-filter_genes = np.append(essential_genes, nonessential_genes)
-G_filtered = G.subgraph(np.sort(filter_genes))
-
-A = networkx.subgraph(G_filtered, essential_genes)
-B = networkx.subgraph(G_filtered, nonessential_genes)
-G_filtered = networkx.Graph()
-G_filtered.add_edges_from(list(A.edges()) + list(B.edges()))
-G_filtered.add_nodes_from(list(A.nodes()) + list(B.nodes()))
 
 
 def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
@@ -55,7 +28,7 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
     return gamma, gamma_essential, gamma_nonessential
 
 
-def write_file(genes, gamma_essential, gamma_nonessential,
+def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, data, count_table, suffix):
     count_table.to_csv(
       os.path.join(outpath, "easy_simulated_data",
@@ -63,14 +36,14 @@ def write_file(genes, gamma_essential, gamma_nonessential,
       index=False, sep="\t")
 
     networkx.readwrite.edgelist.write_weighted_edgelist(
-      G_filtered,
+      G_filtered.subgraph(genes),
       os.path.join(outpath, "easy_simulated_data",
                    "{}graph.tsv".format(suffix)),
       delimiter="\t")
 
     data = {
         "graph": G.subgraph(genes),
-        "graph_used": G_filtered,
+        "graph_used": G_filtered.subgraph(genes),
         "genes": genes,
         "essential_genes": genes[:len(gamma_essential)],
         "nonessential_genes": genes[len(gamma_essential):],
@@ -93,9 +66,12 @@ def write_file(genes, gamma_essential, gamma_nonessential,
         pickle.dump(data, out)
 
 
-def build_data(n_essential, n_nonessential, suffix, with_interventions):
-    n_genes = n_essential + n_nonessential
-    genes = filter_genes[:n_genes]
+def build_data(G, G_filtered, data, essential_genes, nonessential_genes,
+               suffix, with_interventions):
+    genes = np.append(essential_genes, nonessential_genes)
+    n_genes = len(genes)
+    n_essential = len(essential_genes)
+    n_nonessential = len(nonessential_genes)
     gamma, gamma_essential, gamma_nonessential = get_gamma(
       n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential)
     gamma_dict = {ge: ga for ga, ge in zip(gamma, genes)}
@@ -109,18 +85,14 @@ def build_data(n_essential, n_nonessential, suffix, with_interventions):
                     for s in sgrnas for r in replicates]
 
     count_table = pd.DataFrame(
-      combinations, columns=["genes", "conditions", "sgrnas", "replicates"])
-    count_table.sgrnas = np.repeat(
+      combinations, columns=["gene", "condition", "intervention", "replicate"])
+    count_table.intervention = np.repeat(
       [i for i in range(n_conditions * n_sgrnas * n_genes)], n_replicates)
-    condition_ids = np.repeat(
-      ["C" + str(i) for i in range(n_conditions)],
-      n_sgrnas * n_replicates * n_genes)
-    count_table.conditions = condition_ids
     gene_condition_ids = np.array(
       ["{}-{}".format(g, c) for g, c in
-       zip(count_table.genes, count_table.conditions)])
+       zip(count_table.gene, count_table.condition)])
     count_table["gene_conditions"] = gene_condition_ids
-    count_table["gamma"] = [gamma_dict[g] for g in count_table["genes"].values]
+    count_table["gamma"] = [gamma_dict[g] for g in count_table["gene"].values]
 
     conds = np.unique(gene_condition_ids)
     beta = st.norm.rvs(0, beta_tau, size=len(conds))
@@ -131,30 +103,64 @@ def build_data(n_essential, n_nonessential, suffix, with_interventions):
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
     if not with_interventions:
         l[:] = 0
-    count_table["l"] = l[count_table["sgrnas"]]
+    count_table["l"] = l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
       count_table["l"] + count_table["beta"] + count_table["gamma"], data_tau)
-
-    write_file(genes, gamma_essential, gamma_nonessential,
+    count_table["intervention"] = ["S" + str(i) for i in
+                                   count_table["intervention"]]
+    write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, data,
                count_table, suffix)
 
 
-def build_large_data(with_interventions):
-    n_essential = len(essential_genes)
-    n_nonessential = len(nonessential_genes)
-    build_data(n_essential, n_nonessential, "", with_interventions)
+def filtered_graph(G, essential_genes, nonessential_genes):
+    A = networkx.subgraph(G, essential_genes)
+    B = networkx.subgraph(G, nonessential_genes)
+    G = networkx.Graph()
+    G.add_edges_from(list(A.edges()) + list(B.edges()))
+    G.add_nodes_from(list(A.nodes()) + list(B.nodes()))
+    return G
 
 
 @click.command()
 @click.argument('size', type=click.Choice(["small", "large"]))
 @click.option("--with-interventions", is_flag=True)
 def run(size, with_interventions):
+    data = pd.read_csv(os.path.join(outpath, "gene_summary.tsv"), sep="\t")
+    genes = data.id.values
+    G = networkx.read_edgelist(
+      "../data_raw/mouse_gene_network.tsv",
+      delimiter="\t",
+      data=(('weight', float),),
+      nodetype=str)
+    essential_genes = np.array(
+      list(genes[:4]) + ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
+    nonessential_genes = np.setdiff1d(genes, essential_genes)
+
+    neighbors = []
+    for c in essential_genes:
+        neighbors += networkx.neighbors(G, c)
+    G = G.subgraph(np.sort(np.unique(neighbors)))
+
+    np.random.seed(42)
+    nonessential_genes = np.random.choice(
+      nonessential_genes, size=9, replace=False)
     if size == "small":
-        build_data(1, 1, "small-", with_interventions=False)
+        essential_genes = np.array(["PSMC5"])
+        nonessential_genes = np.array(["PSMB1"])
+    filter_genes = np.append(essential_genes, nonessential_genes)
+    G = G.subgraph(np.sort(filter_genes))
+    G_filtered = filtered_graph(G, essential_genes, nonessential_genes)
+
+    if size == "small":
+        suffix = "small-"
+        G_filtered = G
     else:
-        build_large_data(with_interventions)
+        suffix = "large-"
+    build_data(G, G_filtered, data,
+               essential_genes, nonessential_genes,
+               suffix, with_interventions=False)
 
 
 if __name__ == "__main__":

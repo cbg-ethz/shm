@@ -63,6 +63,7 @@ def _plot_network(graph, data, out_dir, fm):
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
     plt.savefig(out_dir + "/graph.{}".format(fm))
+    plt.show()
 
 
 def _plot_data(data, ppc_trace, out_dir, fm):
@@ -152,18 +153,19 @@ def _write_params(model, data, trace, out_dir):
 def _plot_posterior_labels(trace, genes, out_dir, fm):
     if 'z' in trace.varnames:
         ax = sp.plot_posterior_labels(trace, genes)
-        plt.figure(out_dir + "/posterior_labels.{}".format(fm))
+        plt.savefig(out_dir + "/posterior_labels.{}".format(fm))
+        plt.close('all')
 
 
 def plot_model(graph, data, readout, trace, ppc_trace,
                trace_dir, model, out_dir):
     _write_params(model, data, trace, out_dir)
     for fm in ["pdf", "svg"]:
-        _plot_network(graph, data, out_dir, fm)
-        _plot_data(readout, ppc_trace, out_dir, fm)
-        _plot_trace(trace, model, out_dir, fm)
-        _plot_hist(trace, model, out_dir, fm)
-        _plot_forest(trace, data, model, out_dir, fm)
+        # _plot_network(graph, data, out_dir, fm)
+        # _plot_data(readout, ppc_trace, out_dir, fm)
+        # _plot_trace(trace, model, out_dir, fm)
+        # _plot_hist(trace, model, out_dir, fm)
+        # _plot_forest(trace, data, model, out_dir, fm)
         _plot_posterior_labels(trace, data["genes"], out_dir, fm)
 
 

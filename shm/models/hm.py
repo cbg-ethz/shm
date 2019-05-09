@@ -163,6 +163,10 @@ class HM(ABC):
     def _beta_idx_to_gene_cond(self):
         return self.__beta_idx_to_gene_cond
 
+    # TODO: add methods that map gene to gamma/beta, etc.
+
+
+
     def _set_data(self):
         data = self.__data
         self.__n, _ = data.shape

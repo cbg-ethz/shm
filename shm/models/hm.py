@@ -156,6 +156,10 @@ class HM(ABC):
         return self.__beta_idx_to_gene
 
     @property
+    def _gene_to_beta_index(self):
+        return self.__gene_to_beta_idx
+
+    @property
     def _beta_idx_to_gene_cond(self):
         return self.__beta_idx_to_gene_cond
 
@@ -186,6 +190,7 @@ class HM(ABC):
                                     len(self.__conditions))
         self.__beta_idx_to_gene = {i: self.__index_to_gene[i]
                                    for i in self.__beta_idx}
+        self.__gene_to_beta_idx = {e: i for i, e in self.__beta_idx_to_gene.items()}
 
         self.__gene_cond_data = ["{}-{}".format(g, c)
            for g, c in zip(data[GENE].values, data[CONDITION].values)]

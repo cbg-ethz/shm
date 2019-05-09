@@ -172,15 +172,15 @@ def plot_model(graph, data, readout, trace, ppc_trace,
 @click.argument('data_file', type=str)
 @click.argument('graph_file', type=str)
 @click.argument('pickl_file', type=str)
-@click.argument('model', type=click.Choice(["mrf", "clustering", "simple"]))
-def run(trace, data_file, graph_file, pickl_file, model):
+@click.argument('model_type', type=click.Choice(["mrf", "clustering", "simple"]))
+def run(trace, data_file, graph_file, pickl_file, model_type):
     out_dir = trace.replace("trace", "results")
     with open(pickl_file, "rb") as fh:
         data = pickle.load(fh)
     readout = pd.read_csv(data_file, sep="\t")
     graph, _ = _read_graph(graph_file, readout)
 
-    with HLM(readout, model=model, graph=graph) as model:
+    with HLM(readout, model=model_type, graph=graph) as model:
         trace = pm.load_trace(trace, model=model.model)
         ppc_trace = pm.sample_posterior_predictive(trace, 100, model.model)
 

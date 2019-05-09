@@ -116,23 +116,25 @@ def build_data(n_essential, n_nonessential, suffix, with_interventions):
       ["C" + str(i) for i in range(n_conditions)],
       n_sgrnas * n_replicates * n_genes)
     count_table.conditions = condition_ids
-    gene_condition_ids = np.array([ "{}-{}".format(g, c)
-                                    for g, c in zip(count_table.genes, count_table.conditions)])
+    gene_condition_ids = np.array(
+      ["{}-{}".format(g, c) for g, c in
+       zip(count_table.genes, count_table.conditions)])
+    count_table["gene_conditions"] = gene_condition_ids
     count_table["gamma"] = [gamma_dict[g] for g in count_table["genes"].values]
 
-    conds = np.unique(condition_ids)
+    conds = np.unique(gene_condition_ids)
     beta = st.norm.rvs(0, beta_tau, size=len(conds))
     beta_dict = {c: b for c, b in zip(conds, beta)}
-    count_table["beta"] = [beta_dict[g] for g in count_table["conditions"].values]
 
+    count_table["beta"] = np.array(
+      [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
     if not with_interventions:
         l[:] = 0
     count_table["l"] = l[count_table["sgrnas"]]
 
-    count_table["readout"] = st.norm.rvs(count_table["l"] + \
-                       count_table["beta"] + \
-                       count_table["gamma"], data_tau)
+    count_table["readout"] = st.norm.rvs(
+      count_table["l"] + count_table["beta"] + count_table["gamma"], data_tau)
 
     write_file(genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, data,

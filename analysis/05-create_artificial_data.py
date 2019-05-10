@@ -136,12 +136,13 @@ def run(size, with_interventions):
       nodetype=str)
     essential_genes = np.array(
       list(genes[:4]) + ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
-    nonessential_genes = np.setdiff1d(genes, essential_genes)
+
 
     neighbors = []
     for c in essential_genes:
         neighbors += networkx.neighbors(G, c)
     G = G.subgraph(np.sort(np.unique(neighbors)))
+    nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
 
     np.random.seed(42)
     nonessential_genes = np.random.choice(

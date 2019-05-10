@@ -163,10 +163,15 @@ class HM(ABC):
     def _beta_idx_to_gene_cond(self):
         return self.__beta_idx_to_gene_cond
 
+    @property
+    def _gene_data_idx(self):
+        return self.__gene_data_idx
+
+    @property
+    def n_gene_condition(self):
+        return self.__len_gene_cond
+
     # TODO: add methods that map gene to gamma/beta, etc.
-
-
-
     def _set_data(self):
         data = self.__data
         self.__n, _ = data.shape
@@ -199,6 +204,7 @@ class HM(ABC):
         self.__gene_cond_data = ["{}-{}".format(g, c)
            for g, c in zip(data[GENE].values, data[CONDITION].values)]
         self.__gene_cond_data_idx = le.fit_transform(self.__gene_cond_data)
+        self.__len_gene_cond = len(sp.unique(self.__gene_cond_data))
         self.__beta_idx_to_gene_cond = {
             i: e for i, e in zip(self.__gene_cond_data_idx,
                                  self.__gene_cond_data)

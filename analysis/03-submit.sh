@@ -5,7 +5,7 @@ function test_run {
 	echo "Running tests"
 	bsub -W 4:00 -n 1 -R "rusage[mem=15000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/mrf_model_small \
+	    /cluster/home/simondi/simondi/data/shm/test-mrf_model \
 	    --family gaussian \
 	    --ntune 100 \
 	    --ndraw 100 \
@@ -14,7 +14,7 @@ function test_run {
 
 	bsub -W 4:00 -n 1 -R "rusage[mem=15000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/clustering_model_small \
+	    /cluster/home/simondi/simondi/data/shm/test-clustering_model \
 	    --family gaussian \
 	    --ntune 100 \
 	    --ndraw 100 \
@@ -23,7 +23,7 @@ function test_run {
 
 	bsub -W 4:00 -n 1 -R "rusage[mem=15000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/simple_model_small \
+	    /cluster/home/simondi/simondi/data/shm/test-simple_model \
 	    --family gaussian \
 	    --ntune 100 \
 	    --ndraw 100 \
@@ -35,7 +35,7 @@ function submit_run {
 	echo "Submitting jobs"
 	bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/mrf_model \
+	    /cluster/home/simondi/simondi/data/shm/large-mrf_model \
 	    --family gaussian \
 	    --ntune 100000 \
 	    --ndraw 20000 \
@@ -44,7 +44,7 @@ function submit_run {
 
 	bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/clustering_model \
+	    /cluster/home/simondi/simondi/data/shm/large-clustering_model \
 	    --family gaussian \
 	    --ntune 100000 \
 	    --ndraw 20000 \
@@ -53,7 +53,7 @@ function submit_run {
 
 	bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
 	    ../data_raw/easy_simulated_data/large-simulated_data.tsv \
-	    /cluster/home/simondi/simondi/data/shm/simple_model \
+	    /cluster/home/simondi/simondi/data/shm/large-simple_model \
 	    --family gaussian \
 	    --ntune 100000 \
 	    --ndraw 20000 \

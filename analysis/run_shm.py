@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+import pickle
 import warnings
 
 import click
@@ -36,16 +37,13 @@ def _load_data(infile, family):
 
 
 def _read_graph(infile, data):
-    if infile is None:
-        return None, data
-    genes = numpy.unique(data[GENE].values)
-    G = networkx.read_edgelist(
-      infile,
-      delimiter="\t",
-      data=(('weight', float),),
-      nodetype=str)
+    genes = numpy.unique(data["gene"].values)
+    with open(infile, "rb") as fh:
+        G = pickle.load(fh)
     G = G.subgraph(numpy.sort(genes))
     data = data[data.gene.isin(numpy.sort(G.nodes()))]
+    if len(G.nodes()) != len(numpy.unique(data.gene.values)):
+        raise ValueError("Node count different than gene count")
     return G, data
 
 

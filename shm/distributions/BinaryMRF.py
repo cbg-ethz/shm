@@ -10,19 +10,10 @@ from shm.globals import ESSENTIAL, NON_ESSENTIAL
 
 
 class BinaryMRF(Discrete):
-    def __init__(self, G, node_labels=None, *args, **kwargs):
-        if isinstance(G, networkx.Graph):
-            self.__node_labels = numpy.sort(G.nodes())
-            self.__adj = networkx.to_numpy_matrix(
-              G, nodelist=self.__node_labels, weight='weight')
-        elif isinstance(G, numpy.matrix) or isinstance(G, numpy.ndarray):
-            if isinstance(G, numpy.matrix):
-                G = numpy.asarray(G)
-            if node_labels is None:
-                raise ValueError("Please provide node labels")
-            self.__node_labels = node_labels
-            self.__adj = G
-
+    def __init__(self, G: networkx.Graph, *args, **kwargs):
+        self.__node_labels = numpy.sort(G.nodes())
+        self.__adj = networkx.to_numpy_matrix(
+          G, nodelist=self.__node_labels, weight='weight')
         self.__n = len(self.__node_labels)
         super(BinaryMRF, self).__init__(shape=self.__n, *args, **kwargs)
 
@@ -34,10 +25,6 @@ class BinaryMRF(Discrete):
     @property
     def n_nodes(self):
         return self.__n
-
-    @property
-    def node_labels(self):
-        return self.__node_labels
 
     def logp(self, value):
         return 0

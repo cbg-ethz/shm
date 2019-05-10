@@ -35,13 +35,12 @@ logger = logging.getLogger(__name__)
 
 def _read_graph(infile, data):
     genes = numpy.unique(data["gene"].values)
-    G = networkx.read_edgelist(
-      infile,
-      delimiter="\t",
-      data=(('weight', float),),
-      nodetype=str)
+    with open(infile, "rb") as fh:
+        G = pickle.load(fh)
     G = G.subgraph(numpy.sort(genes))
     data = data[data.gene.isin(numpy.sort(G.nodes()))]
+    if len(G.nodes()) != len(numpy.unique(data.gene.values)):
+        raise ValueError("Node count different than gene count")
     return G, data
 
 

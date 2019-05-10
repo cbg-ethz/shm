@@ -24,14 +24,12 @@ class HLM(HM):
                  link_function=Link.identity,
                  model="simple",
                  graph=None,
-                 node_labels=None,
                  sampler="metropolis"):
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
                          model=model,
                          graph=graph,
-                         node_labels=node_labels,
                          sampler=sampler)
 
     @property
@@ -83,7 +81,7 @@ class HLM(HM):
 
     def _set_mrf_model(self):
         with pm.Model() as model:
-            z = BinaryMRF('z', G=self.graph, node_labels=self.node_labels)
+            z = BinaryMRF('z', G=self.graph)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
         tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
 

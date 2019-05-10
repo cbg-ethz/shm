@@ -31,15 +31,12 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
 def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, data, count_table, suffix):
     count_table.to_csv(
-      os.path.join(outpath, "easy_simulated_data",
-                   "{}simulated_data.tsv".format(suffix)),
+      os.path.join(outpath, "{}simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
 
-    networkx.readwrite.edgelist.write_weighted_edgelist(
-      G_filtered.subgraph(genes),
-      os.path.join(outpath, "easy_simulated_data",
-                   "{}graph.tsv".format(suffix)),
-      delimiter="\t")
+    with open(
+      os.path.join(outpath, "{}graph.pickle".format(suffix)), "wb") as out:
+        pickle.dump(G_filtered.subgraph(genes), out)
 
     data = {
         "graph": G.subgraph(genes),
@@ -60,8 +57,7 @@ def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
         "data": data,
         "count_table": count_table
     }
-    picklepath = os.path.join(outpath, "easy_simulated_data",
-                              "{}data.pickle".format(suffix))
+    picklepath = os.path.join(outpath, "{}data.pickle".format(suffix))
     with open(picklepath, "wb") as out:
         pickle.dump(data, out)
 
@@ -127,38 +123,34 @@ def filtered_graph(G, essential_genes, nonessential_genes):
 @click.argument('size', type=click.Choice(["small", "large"]))
 @click.option("--with-interventions", is_flag=True)
 def run(size, with_interventions):
-    data = pd.read_csv(os.path.join(outpath, "gene_summary.tsv"), sep="\t")
+    data = pd.read_csv(os.path.join(outpath,
+                                    "pilot_screen/gene_summary.tsv"), sep="\t")
     genes = data.id.values
     G = networkx.read_edgelist(
-      "../data_raw/mouse_gene_network.tsv",
+      "../data_raw/pilot_screen/mouse_gene_network.tsv",
       delimiter="\t",
       data=(('weight', float),),
       nodetype=str)
+    G = G.subgraph(np.unique(genes))
     essential_genes = np.array(
       list(genes[:4]) + ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
-
-
-    neighbors = []
-    for c in essential_genes:
-        neighbors += networkx.neighbors(G, c)
-    G = G.subgraph(np.sort(np.unique(neighbors)))
     nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
 
     np.random.seed(42)
     nonessential_genes = np.random.choice(
-      nonessential_genes, size=9, replace=False)
+      nonessential_genes, size=11, replace=False)
     if size == "small":
         essential_genes = np.array(["PSMC5"])
         nonessential_genes = np.array(["PSMB1"])
     filter_genes = np.append(essential_genes, nonessential_genes)
     G = G.subgraph(np.sort(filter_genes))
-    G_filtered = filtered_graph(G, essential_genes, nonessential_genes)
+    G_filtered = G
 
     if size == "small":
         suffix = "small-"
         G_filtered = G
     else:
-        suffix = "large-"
+        suffix = ""
     build_data(G, G_filtered, data,
                essential_genes, nonessential_genes,
                suffix, with_interventions=False)

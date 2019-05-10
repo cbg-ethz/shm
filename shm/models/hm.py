@@ -24,11 +24,15 @@ class HM(ABC):
                  link_function=Link.identity,
                  model=Model.simple,
                  graph=None,
-                 node_labels=None,
                  sampler=Sampler.metropolis):
         self.__data = data
         self.__graph = graph
-        self.__node_labels = node_labels
+        if graph:
+            d_genes = sp.sort(sp.unique(self.__data.gene.values))
+            g_genes = sp.sort(graph.nodes())
+            if not sp.array_equal(d_genes, g_genes):
+                raise ValueError("Graph nodes != data genes")
+            self.__node_labels = d_genes
 
         self._set_data()
         self._set_link(link_function)

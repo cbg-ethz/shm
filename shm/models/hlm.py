@@ -50,26 +50,27 @@ class HLM(HM):
 
     def __gamma_mix(self, model, z):
         with model:
-            tau_g = pm.InverseGamma("tau_g", alpha=3., beta=1., shape=2)
+            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=2)
             mean_g = pm.Normal("mu_g", mu=np.array([0., -1.]), sd=0.5, shape=2)
             pm.Potential(
               "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0., -np.inf, 0.))
-            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
+            gamma = pm.Normal("gamma", mean_g[z], 0.1, shape=self.n_genes)
         return tau_g, mean_g, gamma
 
     def __hlm(self, model, gamma):
         with model:
-            tau_b = pm.InverseGamma("tau_b", alpha=3., beta=1., shape=1)
+            tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
-            l_tau = pm.InverseGamma("tau_l", alpha=3., beta=1.)
+            l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
+
             mu = gamma[self._gene_data_idx] + \
-                 beta[self._gene_cond_data_idx] + \
-                 l[self._intervention_data_idx]
+                beta[self._gene_cond_data_idx] #+ \
+                 #l[self._intervention_data_idx]
 
             if self.family == Family.gaussian:
-                sd = pm.HalfNormal("sd", sd=0.5)
+                sd = pm.InverseGamma("sd", alpha=2., beta=1., shape=1)
                 pm.Normal("x", mu=mu, sd=sd,
                           observed=np.squeeze(self.data[READOUT].values))
             else:
@@ -122,18 +123,20 @@ class HLM(HM):
 
     def _set_simple_model(self):
         with pm.Model() as model:
-            tau_g = pm.InverseGamma("tau_g", alpha=5., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=0, sd=0.5, shape=1)
-            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
+            #tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
+            #mean_g = pm.Normal("mu_g", mu=0, sd=0.5, shape=1)
+            gamma = np.array([-0.06117564, -0.83756546 ])  # pm.Normal("gamma", mean_g, 0.1, shape=self.n_genes)
 
         tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
         with model:
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
+                    #tau_g, mean_g, gamma,
+                    tau_b, beta, l_tau, l, sd])
             else:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
+                    #tau_g, mean_g, gamma,
+                    tau_b, beta, l_tau, l])
 
         self.__steps = [self._continuous_step]
         self.__model = model

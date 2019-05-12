@@ -178,7 +178,7 @@ def plot_parallel(trace):
     return fig, ax
 
 
-def plot_trace(trace, var_name, idx, title):
+def plot_trace(trace, var_name, idx, title=""):
     frame = _to_df(trace, var_name, idx)
 
     fig, ax = plt.subplots(dpi=720)
@@ -193,7 +193,7 @@ def plot_trace(trace, var_name, idx, title):
     return fig, ax
 
 
-def plot_hist(trace, var_name, idx, title):
+def plot_hist(trace, var_name, idx, title=""):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values

@@ -250,14 +250,15 @@ def plot_posterior_labels(trace, genes, cols=["#E84646", "#316675"]):
     len_z = len(P1)
     prob_table = pd.DataFrame({
         "Probability": np.concatenate((P0, P1)),
-        "o": np.append(np.repeat("No-hit", len_z),
-                            np.repeat("Hit", len_z)),
+        "o": np.append(np.repeat("No-hit", len_z), np.repeat("Hit", len_z)),
         "Gene": np.tile(genes, 2)})
     ax = sns.barplot(x="Gene", y="Probability", hue="o",
                      data=prob_table, palette=cols,
                      linewidth=2.5, edgecolor=".2")
     ax.set_ylim(0, 1)
     sns.despine()
+    plt.xticks(rotation=90)
+
     plt.title('Posterior class labels', loc='left', fontsize=16)
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1.5, 0.5), ncol=1)

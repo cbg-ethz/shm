@@ -160,11 +160,11 @@ def plot_model(graph, data, readout, trace, ppc_trace,
                trace_dir, model, out_dir):
     _write_params(model, data, trace, out_dir)
     for fm in ["pdf", "svg"]:
-        # _plot_network(graph, data, out_dir, fm)
-        # _plot_data(readout, ppc_trace, out_dir, fm)
-        # _plot_trace(trace, model, out_dir, fm)
-        # _plot_hist(trace, model, out_dir, fm)
-        # _plot_forest(trace, data, model, out_dir, fm)
+        _plot_network(graph, data, out_dir, fm)
+        _plot_data(readout, ppc_trace, out_dir, fm)
+        _plot_trace(trace, model, out_dir, fm)
+        _plot_hist(trace, model, out_dir, fm)
+        _plot_forest(trace, data, model, out_dir, fm)
         _plot_posterior_labels(trace, data["genes"], out_dir, fm)
 
 

@@ -102,17 +102,22 @@ def build_data(G, G_filtered, essential_genes, nonessential_genes,
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
+    o = st.uniform.rvs(0, 1, size=n_conditions * n_genes * n_sgrnas)
+
     polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:10]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:10]
     if not with_interventions:
         l[:] = 0
+        o[:] = 1
 
+    count_table["o"] = o[count_table["intervention"]]
+    count_table["o"][polr1b_idx] = .1
+    count_table["o"][psmb1_idx] = .1
     count_table["l"] = l[count_table["intervention"]]
-    count_table["l"][polr1b_idx] = -gamma_dict['POLR1B']
-    count_table["l"][psmb1_idx] = -gamma_dict['PSMB1']
 
     count_table["readout"] = st.norm.rvs(
-      count_table["l"] + count_table["beta"] + count_table["gamma"],
+      count_table["l"] +
+      count_table["o"] * (count_table["beta"] + count_table["gamma"]),
       data_tau)
 
     count_table["intervention"] = ["S" + str(i) for i in
@@ -136,7 +141,7 @@ def filtered_graph(G, essential_genes, nonessential_genes):
 @click.option("--with-interventions", is_flag=True)
 def run(size, with_interventions):
     essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
-                       "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
+                              "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
 
     G = read_graph("../data_raw/full_graph.pickle")
     nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
@@ -145,20 +150,17 @@ def run(size, with_interventions):
     G = G.subgraph(essential_genes + nonessential_genes)
 
     if size == "small":
-        essential_genes = np.array(["PSMC5"])
+        essential_genes = np.array(["POLR1B"])
         nonessential_genes = np.array(["PSMB1"])
     filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
     G = G.subgraph(np.sort(filter_genes))
     G_filtered = filtered_graph(G, essential_genes, nonessential_genes)
 
     if size == "small":
-        suffix = "small-"
         G_filtered = G
-    else:
-        suffix = ""
     build_data(G, G_filtered,
                essential_genes, nonessential_genes,
-               suffix, with_interventions=False)
+               "", with_interventions=False)
 
 
 if __name__ == "__main__":

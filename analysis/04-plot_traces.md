@@ -124,7 +124,36 @@ numpy.mean(trace['gamma'], 0)[list(model._index_to_gene.keys())]
 ```
 
 ```python
+data['beta']
+```
+
+```python
+numpy.mean(trace['beta'], 0)[list(model._beta_idx_to_gene_cond.keys())]
+```
+
+```python
 sp.plot_steps(readout, ppc_trace, bins=19);
+```
+
+```python
+data['essential_genes']
+```
+
+```python
+plt.figure(figsize=(10, 6))
+pos = networkx.shell_layout(G)
+networkx.draw_networkx_nodes(
+  G, pos=pos,
+  nodelist=list(data['essential_genes']), node_size=300,
+  node_color='#316675', font_size=15, alpha=.9, label="Essential genes")
+networkx.draw_networkx_nodes(
+  G, pos=pos,
+  nodelist=list(data['nonessential_genes']), node_size=300,
+  node_color='#E84646', font_size=15, alpha=.9, label="Non-essential genes")
+networkx.draw_networkx_edges(G, pos=pos)
+plt.axis('off')
+plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
+           borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
 ```
 
 ## Clustering model

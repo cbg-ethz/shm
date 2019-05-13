@@ -258,7 +258,6 @@ def plot_posterior_labels(trace, genes, cols=["#E84646", "#316675"]):
     ax.set_ylim(0, 1)
     sns.despine()
     plt.xticks(rotation=90)
-
     plt.title('Posterior class labels', loc='left', fontsize=16)
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1.5, 0.5), ncol=1)

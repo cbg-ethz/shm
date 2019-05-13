@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
 
 import os
+import pickle
 
 import click
-
-import shm
-import numpy
-import networkx
-import matplotlib
-import seaborn as sns
-import pandas as pd
-import pickle
-import pymc3 as pm
-import logging
-import arviz as az
-import shm.plot as sp
 import matplotlib.pyplot as plt
+import networkx
+import numpy
+import pandas as pd
+import pymc3 as pm
 import seaborn as sns
+
+import shm.plot as sp
 from shm.models.hlm import HLM
 
 sns.set_style(
@@ -30,34 +25,28 @@ sns.set_style(
 )
 
 cols = ["#E84646", "#316675"]
-logger = logging.getLogger(__name__)
 
 
-def _read_graph(infile, data):
-    genes = numpy.unique(data["gene"].values)
+def read_graph(infile):
     with open(infile, "rb") as fh:
         G = pickle.load(fh)
-    G = G.subgraph(numpy.sort(genes))
-    data = data[data.gene.isin(numpy.sort(G.nodes()))]
-    if len(G.nodes()) != len(numpy.unique(data.gene.values)):
-        raise ValueError("Node count different than gene count")
-    return G, data
+    return G
 
 
-def _plot_network(graph, data, out_dir, fm):
+def _plot_network(G, data, out_dir, fm):
     plt.figure(figsize=(10, 6))
-    pos = networkx.shell_layout(graph)
+    pos = networkx.shell_layout(G)
     networkx.draw_networkx_nodes(
-      graph, pos=pos,
-      nodelist=data['essential_genes'], node_size=300,
+      G, pos=pos,
+      nodelist=list(data['essential_genes']), node_size=300,
       node_color='#316675', font_size=15, alpha=.9,
-      label="Essential gene")
+      label="Essential genes")
     networkx.draw_networkx_nodes(
-      graph, pos=pos,
-      nodelist=data['nonessential_genes'], node_size=300,
+      G, pos=pos,
+      nodelist=list(data['nonessential_genes']), node_size=300,
       node_color='#E84646', font_size=15, alpha=.9,
-      label="Non-essential gene")
-    networkx.draw_networkx_edges(graph, pos=pos)
+      label="Non-essential genes")
+    networkx.draw_networkx_edges(G, pos=pos)
     plt.axis('off')
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
@@ -70,6 +59,7 @@ def _plot_data(data, ppc_trace, out_dir, fm):
     fig.set_size_inches(6, 3)
     plt.tight_layout()
     plt.savefig(out_dir + "/data.{}".format(fm))
+
     fig, ax = sp.plot_steps(data, ppc_trace, bins=30)
     fig.set_size_inches(8, 5)
     plt.tight_layout()
@@ -126,18 +116,20 @@ def _plot_hist(trace, model, out_dir, fm):
         fig, ax = sp.plot_hist(trace, "gamma", i, gene)
         fig.set_size_inches(10, 4)
         plt.savefig(out_dir + "/gamma_histogram_{}.{}".format(gene, fm))
+        plt.close('all')
     for i in range(n_b):
         gene_cond = model._beta_idx_to_gene_cond[i]
         fig, ax = sp.plot_hist(trace, "beta", i, gene_cond)
         fig.set_size_inches(10, 4)
         plt.savefig(out_dir + "/beta_histogram_{}.{}".format(gene_cond, fm))
+        plt.close('all')
 
 
 def _write_params(model, data, trace, out_dir):
     gamma_true = data['gamma']
     beta_true = data['beta']
     gamma_pred_mean = numpy.mean(trace['gamma'], 0)[
-        list(model._beta_index_to_gene.keys())]
+        list(model._index_to_gene.keys())]
     beta_pred_mean = numpy.mean(trace['beta'], 0)[
         list(model._beta_idx_to_gene_cond.keys())]
 
@@ -160,11 +152,17 @@ def plot_model(graph, data, readout, trace, ppc_trace,
                trace_dir, model, out_dir):
     _write_params(model, data, trace, out_dir)
     for fm in ["pdf", "svg"]:
+        print("network")
         _plot_network(graph, data, out_dir, fm)
+        print("data")
         _plot_data(readout, ppc_trace, out_dir, fm)
+        print("trace")
         _plot_trace(trace, model, out_dir, fm)
+        print("hist")
         _plot_hist(trace, model, out_dir, fm)
+        print("forest")
         _plot_forest(trace, data, model, out_dir, fm)
+        print("labels")
         _plot_posterior_labels(trace, data["genes"], out_dir, fm)
 
 
@@ -173,13 +171,14 @@ def plot_model(graph, data, readout, trace, ppc_trace,
 @click.argument('readout_file', type=str)
 @click.argument('graph_file', type=str)
 @click.argument('pickl_file', type=str)
-@click.argument('model_type', type=click.Choice(["mrf", "clustering", "simple"]))
+@click.argument('model_type',
+                type=click.Choice(["mrf", "clustering", "simple"]))
 def run(trace, readout_file, graph_file, pickl_file, model_type):
     out_dir = trace.replace("trace", "results")
     with open(pickl_file, "rb") as fh:
         data = pickle.load(fh)
     readout = pd.read_csv(readout_file, sep="\t")
-    graph, _ = _read_graph(graph_file, readout)
+    graph = read_graph(graph_file)
 
     with HLM(readout, model=model_type, graph=graph) as model:
         trace = pm.load_trace(trace, model=model.model)

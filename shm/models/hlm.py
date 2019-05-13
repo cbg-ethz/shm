@@ -86,7 +86,7 @@ class HLM(HM):
 
     def _set_mrf_model(self):
         with pm.Model() as model:
-            z = BinaryMRF('z', G=self.graph, shape=self.n_genes)
+            z = BinaryMRF('z', G=self.graph)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
         tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
 

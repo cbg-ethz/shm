@@ -65,7 +65,7 @@ class HLM(HM):
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
-            o = pm.Uniform.rvs("o", 0, 1, shape=self.n_interventions)
+            o = pm.Uniform("o", 0, 1, shape=self.n_interventions)
 
             mu = o[self._intervention_data_idx] * \
                  (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx]) + \

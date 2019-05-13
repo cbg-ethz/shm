@@ -33,7 +33,7 @@ def read_graph(infile):
     return G
 
 
-def _plot_network(G, data, out_dir, fm):
+def _plot_network(G, data, out_dir):
     plt.figure(figsize=(10, 6))
     pos = networkx.shell_layout(G)
     networkx.draw_networkx_nodes(
@@ -50,79 +50,92 @@ def _plot_network(G, data, out_dir, fm):
     plt.axis('off')
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
-    plt.savefig(out_dir + "/graph.{}".format(fm))
-    plt.show()
+    plt.savefig(out_dir + "/graph.pdf")
+    plt.savefig(out_dir + "/graph.svg")
 
 
-def _plot_data(data, ppc_trace, out_dir, fm):
+def _plot_data(data, ppc_trace, out_dir):
     fig, ax = sp.plot_steps(data, bins=30, histtype="bar")
     fig.set_size_inches(6, 3)
     plt.tight_layout()
-    plt.savefig(out_dir + "/data.{}".format(fm))
+    plt.savefig(out_dir + "/data.pdf")
+    plt.savefig(out_dir + "/data.svg")
 
     fig, ax = sp.plot_steps(data, ppc_trace, bins=30)
     fig.set_size_inches(8, 5)
     plt.tight_layout()
     plt.legend(loc='upper left')
-    plt.savefig(out_dir + "/posterior_predictive.{}".format(fm))
+    plt.savefig(out_dir + "/posterior_predictive.pdf")
+    plt.savefig(out_dir + "/posterior_predictive.svg")
 
 
-def _plot_forest(trace, data, model, out_dir, fm):
-    genes = data['genes'][list(model._beta_index_to_gene.keys())]
+def _plot_forest(trace, data, model, out_dir):
+    genes = data['genes'][list(model._index_to_gene.keys())]
     fig, _ = sp.plot_forest(trace, "gamma", genes)
-    plt.savefig(out_dir + "/gamma_forest.{}".format(fm))
-
-    gene_cond = list(model._beta_idx_to_gene_cond.values())
-    fig, _ = sp.plot_forest(trace, "beta", gene_cond)
-    plt.savefig(out_dir + "/beta_forest.{}".format(fm))
-
-    if 'z' in trace.varnames:
-        fig, _ = sp.plot_forest(trace, "z", gene_cond)
-        plt.savefig(out_dir + "/z_forest.{}".format(fm))
-
+    plt.savefig(out_dir + "/gamma_forest.pdf")
+    plt.savefig(out_dir + "/gamma_forest.svg")
     plt.close('all')
 
+    # gene_cond = list(model._beta_idx_to_gene_cond.values())
+    # fig, _ = sp.plot_forest(trace, "beta", gene_cond)
+    # plt.savefig(out_dir + "/beta_forest.pdf")
+    # plt.savefig(out_dir + "/beta_forest.svg")
+    # plt.close('all')
 
-def _plot_trace(trace, model, out_dir, fm):
+    # if 'z' in trace.varnames:
+    #     fig, _ = sp.plot_forest(trace, "z", gene_cond)
+    #     plt.savefig(out_dir + "/z_forest.pdf")
+    #     plt.savefig(out_dir + "/z_forest.svgf")
+    #     plt.close('all')
+
+
+def _plot_trace(trace, model, out_dir):
     n_g = trace['gamma'].shape[1]
 
     fig, ax = sp.plot_neff(trace, "gamma")
-    plt.savefig(out_dir + "/gamma_neff.{}".format(fm))
-    fig.set_size_inches(10, 4)
-    fig, ax = sp.plot_neff(trace, "beta")
-    plt.savefig(out_dir + "/beta_neff.{}".format(fm))
-    fig.set_size_inches(10, 4)
+    plt.savefig(out_dir + "/gamma_neff.svg")
+    plt.savefig(out_dir + "/gamma_neff.pdf")
     plt.close('all')
+
+    # fig, ax = sp.plot_neff(trace, "beta")
+    # fig.set_size_inches(10, 4)
+    # plt.savefig(out_dir + "/beta_neff.{}".format(fm))
+    # plt.close('all')
+
     fig, ax = sp.plot_rhat(trace, "gamma")
-    fig.set_size_inches(10, 4)
-    plt.savefig(out_dir + "/gamma_rhat.{}".format(fm))
-    fig, ax = sp.plot_rhat(trace, "beta")
-    plt.savefig(out_dir + "/beta_rhat.{}".format(fm))
-    fig.set_size_inches(10, 4)
+    plt.savefig(out_dir + "/gamma_rhat.pdf")
+    plt.savefig(out_dir + "/gamma_rhat.svg")
     plt.close('all')
+
+    # fig, ax = sp.plot_rhat(trace, "beta")
+    # fig.set_size_inches(10, 4)
+    # plt.savefig(out_dir + "/beta_rhat.{}".format(fm))
+    # plt.close('all')
+
     for i in range(n_g):
         g = model._index_to_gene[i]
         fig, _ = sp.plot_trace(trace, "gamma", i, g)
-        fig.set_size_inches(10, 4)
-        plt.savefig(out_dir + "/gamma_trace_{}_{}.{}".format(i, g, fm))
+        plt.savefig(out_dir + "/gamma_trace_{}_{}.pdf".format(i, g))
+        plt.savefig(out_dir + "/gamma_trace_{}_{}.svg".format(i, g))
         plt.close('all')
 
 
-def _plot_hist(trace, model, out_dir, fm):
+def _plot_hist(trace, model, out_dir):
     n_g = trace['gamma'].shape[1]
     n_b = trace['beta'].shape[1]
     for i in range(n_g):
         gene = model._index_to_gene[i]
         fig, ax = sp.plot_hist(trace, "gamma", i, gene)
         fig.set_size_inches(10, 4)
-        plt.savefig(out_dir + "/gamma_histogram_{}.{}".format(gene, fm))
+        plt.savefig(out_dir + "/gamma_histogram_{}.svg".format(gene))
+        plt.savefig(out_dir + "/gamma_histogram_{}.pdf".format(gene))
         plt.close('all')
-    for i in range(n_b):
-        gene_cond = model._beta_idx_to_gene_cond[i]
-        fig, ax = sp.plot_hist(trace, "beta", i, gene_cond)
-        fig.set_size_inches(10, 4)
-        plt.savefig(out_dir + "/beta_histogram_{}.{}".format(gene_cond, fm))
-        plt.close('all')
+    # for i in range(n_b):
+    #     gene_cond = model._beta_idx_to_gene_cond[i]
+    #     fig, ax = sp.plot_hist(trace, "beta", i, gene_cond)
+    #     fig.set_size_inches(10, 4)
+    #     plt.savefig(out_dir + "/beta_histogram_{}.{}".format(gene_cond, fm))
+    #     plt.close('all')
 
 
 def _write_params(model, data, trace, out_dir):
@@ -141,29 +154,29 @@ def _write_params(model, data, trace, out_dir):
       out_dir + "/beta.tsv", sep="\t", index=False)
 
 
-def _plot_posterior_labels(trace, genes, out_dir, fm):
+def _plot_posterior_labels(trace, genes, out_dir):
     if 'z' in trace.varnames:
         ax = sp.plot_posterior_labels(trace, genes)
-        plt.savefig(out_dir + "/posterior_labels.{}".format(fm))
+        plt.savefig(out_dir + "/posterior_labels.pdf")
+        plt.savefig(out_dir + "/posterior_labels.svg")
         plt.close('all')
 
 
 def plot_model(graph, data, readout, trace, ppc_trace,
                trace_dir, model, out_dir):
     _write_params(model, data, trace, out_dir)
-    for fm in ["pdf", "svg"]:
-        print("network")
-        _plot_network(graph, data, out_dir, fm)
-        print("data")
-        _plot_data(readout, ppc_trace, out_dir, fm)
-        print("trace")
-        _plot_trace(trace, model, out_dir, fm)
-        print("hist")
-        _plot_hist(trace, model, out_dir, fm)
-        print("forest")
-        _plot_forest(trace, data, model, out_dir, fm)
-        print("labels")
-        _plot_posterior_labels(trace, data["genes"], out_dir, fm)
+    print("network")
+    _plot_network(graph, data, out_dir)
+    print("data")
+    _plot_data(readout, ppc_trace, out_dir)
+    print("trace")
+    _plot_trace(trace, model, out_dir)
+    print("hist")
+    _plot_hist(trace, model, out_dir)
+    print("forest")
+    _plot_forest(trace, data, model, out_dir)
+    print("labels")
+    _plot_posterior_labels(trace, data["genes"], out_dir)
 
 
 @click.command()

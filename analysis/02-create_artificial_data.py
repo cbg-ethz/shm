@@ -19,6 +19,12 @@ gamma_tau_non_essential = .1
 n_conditions, n_sgrnas, n_replicates = 2, 5, 5
 
 
+def read_graph(infile):
+    with open(infile, "rb") as fh:
+        G = pickle.load(fh)
+    return G
+
+
 def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
     np.random.seed(1)
     gamma_essential = sp.random.normal(-1, scale=gamma_tau, size=n_essential)
@@ -29,7 +35,7 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
 
 
 def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, data, count_table, suffix):
+               gamma, beta, l, count_table, suffix):
     count_table.to_csv(
       os.path.join(outpath, "{}simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
@@ -54,7 +60,6 @@ def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
         "l_tau": l_tau,
         "l": l,
         "data_tau": data_tau,
-        "data": data,
         "count_table": count_table
     }
     picklepath = os.path.join(outpath, "{}data.pickle".format(suffix))
@@ -62,7 +67,7 @@ def write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
         pickle.dump(data, out)
 
 
-def build_data(G, G_filtered, data, essential_genes, nonessential_genes,
+def build_data(G, G_filtered, essential_genes, nonessential_genes,
                suffix, with_interventions):
     genes = np.append(essential_genes, nonessential_genes)
     n_genes = len(genes)
@@ -97,6 +102,7 @@ def build_data(G, G_filtered, data, essential_genes, nonessential_genes,
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
+
     if not with_interventions:
         l[:] = 0
     count_table["l"] = l[count_table["intervention"]]
@@ -106,7 +112,7 @@ def build_data(G, G_filtered, data, essential_genes, nonessential_genes,
     count_table["intervention"] = ["S" + str(i) for i in
                                    count_table["intervention"]]
     write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, data,
+               gamma, beta, l,
                count_table, suffix)
 
 
@@ -123,35 +129,33 @@ def filtered_graph(G, essential_genes, nonessential_genes):
 @click.argument('size', type=click.Choice(["small", "large"]))
 @click.option("--with-interventions", is_flag=True)
 def run(size, with_interventions):
-    data = pd.read_csv(os.path.join(outpath,
-                                    "pilot_screen/gene_summary.tsv"), sep="\t")
-    genes = data.id.values
-    G = networkx.read_edgelist(
-      "../data_raw/pilot_screen/mouse_gene_network.tsv",
-      delimiter="\t",
-      data=(('weight', float),),
-      nodetype=str)
-    G = G.subgraph(np.unique(genes))
-    essential_genes = np.array(
-      list(genes[:4]) + ["POLR2C", "POLR1B", "PSMC1", "PSMD4", "TH"])
-    nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
+    essential_genes = ["POLR2C", "POLR1B",  "POLR2D", 'POLR3K',
+                       "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3']
 
-    np.random.seed(42)
-    nonessential_genes = np.random.choice(
-      nonessential_genes, size=11, replace=False)
+    G = read_graph("../data_raw/full_graph.pickle")
+    networkx.draw(G)
+    nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
+    np.random.seed(23)
+    nonessential_genes = list(np.random.choice(nonessential_genes, 21))
+
+    G = G.subraph(essential_genes + nonessential_genes)
+
+    networkx.draw( G)
+    np.random.seed(1)
+
     if size == "small":
         essential_genes = np.array(["PSMC5"])
         nonessential_genes = np.array(["PSMB1"])
     filter_genes = np.append(essential_genes, nonessential_genes)
     G = G.subgraph(np.sort(filter_genes))
-    G_filtered = G
+    G_filtered = filtered_graph(G, essential_genes, nonessential_genes)
 
     if size == "small":
         suffix = "small-"
         G_filtered = G
     else:
         suffix = ""
-    build_data(G, G_filtered, data,
+    build_data(G, G_filtered,
                essential_genes, nonessential_genes,
                suffix, with_interventions=False)
 

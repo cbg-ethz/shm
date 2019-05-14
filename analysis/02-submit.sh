@@ -27,7 +27,7 @@ function submit_run {
                 "/cluster/home/simondi/simondi/data/shm/${i}_model-${j}" \
                 --family gaussian \
                 --ntune 100000 \
-                --ndraw 20000 \
+                --ndraw 30000 \
                 --model ${i} \
                 --graph ../data_raw/${j}-graph.pickle
          done

@@ -110,14 +110,14 @@ def build_data(G, G_filtered, essential_genes, nonessential_genes,
         l[:] = 0
         o[:] = 1
 
-    count_table["o"] = o[count_table["intervention"]]
-    count_table["o"][polr1b_idx] = .1
-    count_table["o"][psmb1_idx] = .1
+    count_table["affinity"] = o[count_table["intervention"]]
+    count_table["affinity"][polr1b_idx] = .1
+    count_table["affinity"][psmb1_idx] = .1
     count_table["l"] = l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
       count_table["l"] +
-      count_table["o"] * (count_table["beta"] + count_table["gamma"]),
+      count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
       data_tau)
 
     count_table["intervention"] = ["S" + str(i) for i in
@@ -148,10 +148,12 @@ def run(size, with_interventions):
     np.random.seed(23)
     nonessential_genes = list(np.random.choice(nonessential_genes, 21))
     G = G.subgraph(essential_genes + nonessential_genes)
+    G = G.copy()
 
     if size == "small":
         essential_genes = np.array(["POLR1B"])
         nonessential_genes = np.array(["PSMB1"])
+        G.add_edge('PSMB1', 'POLR1B')
     filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
     G = G.subgraph(np.sort(filter_genes))
     G_filtered = filtered_graph(G, essential_genes, nonessential_genes)

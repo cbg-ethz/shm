@@ -7,7 +7,7 @@ import theano.tensor as tt
 
 from shm.distributions.BinaryMRF import BinaryMRF
 from shm.family import Family
-from shm.globals import READOUT
+from shm.globals import READOUT, AFFINITY
 from shm.link import Link
 from shm.models.hm import HM
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
@@ -65,9 +65,8 @@ class HLM(HM):
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
-            o = pm.Uniform("o", 0, 1, shape=self.n_interventions)
 
-            mu = o[self._intervention_data_idx] * \
+            mu = self.data[AFFINITY].values * \
                  (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx]) + \
                  l[self._intervention_data_idx]
 
@@ -83,22 +82,22 @@ class HLM(HM):
                            mu=self.link(mu),
                            observed=np.squeeze(self.data[READOUT].values))
 
-        return tau_b, beta, l_tau, l, o, sd
+        return tau_b, beta, l_tau, l, sd
 
     def _set_mrf_model(self):
         with pm.Model() as model:
             z = BinaryMRF('z', G=self.graph)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        tau_b, beta, l_tau, l, o, sd = self.__hlm(model, gamma)
+        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
 
         with model:
             self._discrete_step = RandomFieldGibbs([z])
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o, sd])
+                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
             else:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o])
+                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
 
         self.__steps = [self._discrete_step, self._continuous_step]
         self.__model = model
@@ -110,16 +109,16 @@ class HLM(HM):
             pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
             z = pm.Categorical("z", p=p, shape=self.n_genes)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        tau_b, beta, l_tau, l, o, sd = self.__hlm(model, gamma)
+        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
 
         with model:
             self._discrete_step = pm.CategoricalGibbsMetropolis([z])
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o, sd])
+                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
             else:
                 self._continuous_step = self.sampler([
-                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o])
+                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
 
         self.__steps = [self._discrete_step, self._continuous_step]
         self.__model = model
@@ -131,14 +130,14 @@ class HLM(HM):
             mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
             gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
 
-        tau_b, beta, l_tau, l, o, sd = self.__hlm(model, gamma)
+        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
         with model:
             if self.family == Family.gaussian:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o, sd])
+                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
             else:
                 self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, o])
+                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
 
         self.__steps = [self._continuous_step]
         self.__model = model

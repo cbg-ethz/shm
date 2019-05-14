@@ -8,6 +8,6 @@ GENE = "gene"
 INTERVENTION = "intervention"
 REPLICATE = "replicate"
 READOUT= "readout"
-
+AFFINITY="affinity"
 ESSENTIAL = 1
 NON_ESSENTIAL = 0

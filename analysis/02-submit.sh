@@ -20,14 +20,17 @@ function submit_run {
 	echo "Submitting jobs"
 	for i in "simple" "mrf" "clustering";
     do
-        bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
-	        ../data_raw/simulated_data.tsv \
-            "/cluster/home/simondi/simondi/data/shm/${i}_model" \
-            --family gaussian \
-            --ntune 100000 \
-            --ndraw 20000 \
-            --model ${i} \
-            --graph ../data_raw/graph.pickle
+        for j in "two_genes_zero" "two_bad_sgrnas" "four_bad_sgrnas"
+        do
+            bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
+                ../data_raw/${j}-simulated_data.tsv \
+                "/cluster/home/simondi/simondi/data/shm/${i}_model-${j}" \
+                --family gaussian \
+                --ntune 100000 \
+                --ndraw 20000 \
+                --model ${i} \
+                --graph ../data_raw/${j}-graph.pickle
+         done
     done
 }
 

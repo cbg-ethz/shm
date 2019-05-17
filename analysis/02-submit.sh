@@ -20,7 +20,7 @@ function submit_run {
 	echo "Submitting jobs"
 	for i in "simple" "mrf" "clustering";
     do
-        for j in "two_genes_zero" "two_bad_sgrnas" "four_bad_sgrnas"
+        for j in "2_genes_zero" "2_bad_sgrnas" "5_bad_sgrnas" "6_bad_sgrnas" "7_bad_sgrnas"
         do
             bsub -W 24:00 -n 1 -R "rusage[mem=25000]" python run_shm.py sample \
                 ../data_raw/${j}-simulated_data.tsv \

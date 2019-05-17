@@ -104,31 +104,31 @@ def build_data(G, G_filtered, essential_genes, nonessential_genes,
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
     o = st.uniform.rvs(0, 1, size=n_conditions * n_genes * n_sgrnas)
 
-
-    polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0]#[:10]
-    psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0]#[:10]
-    if not with_interventions:
-        l[:] = 0
-        o[:] = 1
-
-    count_table['gamma'][polr1b_idx] = 0
-    count_table['gamma'][psmb1_idx] = 0
-
-    count_table["affinity"] = o[count_table["intervention"]]
-    count_table["affinity"][polr1b_idx] = .1
-    count_table["affinity"][psmb1_idx] = .1
-    count_table["l"] = l[count_table["intervention"]]
-
-    count_table["readout"] = st.norm.rvs(
-      count_table["l"] +
-      count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
-      data_tau)
-
-    count_table["intervention"] = ["S" + str(i) for i in
-                                   count_table["intervention"]]
-    write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l,
-               count_table, "two_genes_zero")
+    #
+    # polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0]#[:10]
+    # psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0]#[:10]
+    # if not with_interventions:
+    #     l[:] = 0
+    #     o[:] = 1
+    #
+    # count_table['gamma'][polr1b_idx] = 0
+    # count_table['gamma'][psmb1_idx] = 0
+    #
+    # count_table["affinity"] = o[count_table["intervention"]]
+    # count_table["affinity"][polr1b_idx] = .1
+    # count_table["affinity"][psmb1_idx] = .1
+    # count_table["l"] = l[count_table["intervention"]]
+    #
+    # count_table["readout"] = st.norm.rvs(
+    #   count_table["l"] +
+    #   count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
+    #   data_tau)
+    #
+    # count_table["intervention"] = ["S" + str(i) for i in
+    #                                count_table["intervention"]]
+    # write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
+    #            gamma, beta, l,
+    #            count_table, "two_genes_zero")
 
     # polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:10]
     # psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:10]
@@ -152,28 +152,28 @@ def build_data(G, G_filtered, essential_genes, nonessential_genes,
     #            gamma, beta, l,
     #            count_table, "two_bad_sgrnas")
 
-    # polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:20]
-    # psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:0]
-    # if not with_interventions:
-    #     l[:] = 0
-    #     o[:] = 1
-    #
-    # count_table["affinity"] = o[count_table["intervention"]]
-    # count_table["affinity"][polr1b_idx] = .1
-    # count_table["affinity"][psmb1_idx] = .1
-    # count_table["l"] = l[count_table["intervention"]]
-    #
-    # count_table["readout"] = st.norm.rvs(
-    #   count_table["l"] +
-    #   count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
-    #   data_tau)
-    #
-    # count_table["intervention"] = ["S" + str(i) for i in
-    #                                count_table["intervention"]]
-    # write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
-    #            gamma, beta, l,
-    #            count_table, "four_bad_sgrnas")
+    n_bad = 7
+    polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:n_replicates * n_bad]
+    psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:n_replicates * n_bad]
+    if not with_interventions:
+        l[:] = 0
+        o[:] = 1
 
+    count_table["affinity"] = o[count_table["intervention"]]
+    count_table["affinity"][polr1b_idx] = .1
+    count_table["affinity"][psmb1_idx] = .1
+    count_table["l"] = l[count_table["intervention"]]
+
+    count_table["readout"] = st.norm.rvs(
+      count_table["l"] +
+      count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
+      data_tau)
+
+    count_table["intervention"] = ["S" + str(i) for i in
+                                   count_table["intervention"]]
+    write_file(G, G_filtered, genes, gamma_essential, gamma_nonessential,
+               gamma, beta, l,
+               count_table, "{}_bad_sgrnas".format(n_bad))
 
 
 def filtered_graph(G, essential_genes, nonessential_genes):

@@ -33,20 +33,23 @@ def read_graph(infile):
     return G
 
 
-def _plot_network(G, data, out_dir):
+def _plot_network(graph, data, out_dir):
     plt.figure(figsize=(10, 6))
-    pos = networkx.shell_layout(G)
+    pos = networkx.spring_layout(data["graph"])
     networkx.draw_networkx_nodes(
-      G, pos=pos,
+      data["graph"], pos=pos,
       nodelist=list(data['essential_genes']), node_size=300,
-      node_color='#316675', font_size=15, alpha=.9,
-      label="Essential genes")
+      node_color='#316675', font_size=15, alpha=.9, label="Essential genes")
     networkx.draw_networkx_nodes(
-      G, pos=pos,
-      nodelist=list(data['nonessential_genes']), node_size=300,
+      data["graph"].subgraph(["PSMB1", "POLR1B"]), pos=pos,
+      nodelist=list(["PSMB1", "POLR1B"]), node_size=300,
       node_color='#E84646', font_size=15, alpha=.9,
-      label="Non-essential genes")
-    networkx.draw_networkx_edges(G, pos=pos)
+      label="Essential genes\nwith low-quality sgRNAs")
+    networkx.draw_networkx_nodes(
+      data["graph"], pos=pos,
+      nodelist=list(data['nonessential_genes']), node_size=300,
+      node_color='black', font_size=15, alpha=.9, label="Non-essential genes")
+    networkx.draw_networkx_edges(data["graph"], pos=pos)
     plt.axis('off')
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
@@ -76,53 +79,26 @@ def _plot_forest(trace, data, model, out_dir):
     plt.savefig(out_dir + "/gamma_forest.svg")
     plt.close('all')
 
-    # gene_cond = list(model._beta_idx_to_gene_cond.values())
-    # fig, _ = sp.plot_forest(trace, "beta", gene_cond)
-    # plt.savefig(out_dir + "/beta_forest.pdf")
-    # plt.savefig(out_dir + "/beta_forest.svg")
-    # plt.close('all')
-
-    # if 'z' in trace.varnames:
-    #     fig, _ = sp.plot_forest(trace, "z", gene_cond)
-    #     plt.savefig(out_dir + "/z_forest.pdf")
-    #     plt.savefig(out_dir + "/z_forest.svgf")
-    #     plt.close('all')
-
 
 def _plot_trace(trace, model, out_dir):
     n_g = trace['gamma'].shape[1]
 
     fig, ax = sp.plot_neff(trace, "gamma")
+    fig.set_size_inches(8, 5)
     plt.savefig(out_dir + "/gamma_neff.svg")
     plt.savefig(out_dir + "/gamma_neff.pdf")
     plt.close('all')
 
-    # fig, ax = sp.plot_neff(trace, "beta")
-    # fig.set_size_inches(10, 4)
-    # plt.savefig(out_dir + "/beta_neff.{}".format(fm))
-    # plt.close('all')
-
     fig, ax = sp.plot_rhat(trace, "gamma")
+    fig.set_size_inches(8, 5)
     plt.savefig(out_dir + "/gamma_rhat.pdf")
     plt.savefig(out_dir + "/gamma_rhat.svg")
     plt.close('all')
 
-    # fig, ax = sp.plot_rhat(trace, "beta")
-    # fig.set_size_inches(10, 4)
-    # plt.savefig(out_dir + "/beta_rhat.{}".format(fm))
-    # plt.close('all')
-
-    for i in range(n_g):
-        g = model._index_to_gene[i]
-        fig, _ = sp.plot_trace(trace, "gamma", i, g)
-        plt.savefig(out_dir + "/gamma_trace_{}_{}.pdf".format(i, g))
-        plt.savefig(out_dir + "/gamma_trace_{}_{}.svg".format(i, g))
-        plt.close('all')
 
 
 def _plot_hist(trace, model, out_dir):
     n_g = trace['gamma'].shape[1]
-    n_b = trace['beta'].shape[1]
     for i in range(n_g):
         gene = model._index_to_gene[i]
         fig, ax = sp.plot_hist(trace, "gamma", i, gene)
@@ -130,12 +106,6 @@ def _plot_hist(trace, model, out_dir):
         plt.savefig(out_dir + "/gamma_histogram_{}.svg".format(gene))
         plt.savefig(out_dir + "/gamma_histogram_{}.pdf".format(gene))
         plt.close('all')
-    # for i in range(n_b):
-    #     gene_cond = model._beta_idx_to_gene_cond[i]
-    #     fig, ax = sp.plot_hist(trace, "beta", i, gene_cond)
-    #     fig.set_size_inches(10, 4)
-    #     plt.savefig(out_dir + "/beta_histogram_{}.{}".format(gene_cond, fm))
-    #     plt.close('all')
 
 
 def _write_params(model, data, trace, out_dir):
@@ -195,7 +165,7 @@ def run(trace, readout_file, graph_file, pickl_file, model_type):
 
     with HLM(readout, model=model_type, graph=graph) as model:
         trace = pm.load_trace(trace, model=model.model)
-        ppc_trace = pm.sample_posterior_predictive(trace, 100, model.model)
+        ppc_trace = pm.sample_posterior_predictive(trace, 10000, model.model)
 
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)

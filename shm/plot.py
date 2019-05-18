@@ -53,6 +53,7 @@ def _plot_dotline(table, boundary, var, low, mid, high,
     plt.xlabel(xlabel)
     plt.ylabel("Parameters")
     plt.tick_params(axis=None)
+    plt.yticks([])
     plt.xlim(left=xlim)
     plt.tight_layout()
     return fig, ax
@@ -193,22 +194,24 @@ def plot_trace(trace, var_name, idx, title=""):
     return fig, ax
 
 
-def plot_hist(trace, var_name, idx, title=""):
+def plot_hist(trace, var_name, idx, title="", max_idx=1000):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
 
     fig, ax = plt.subplots()
     cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
-    ax.hist(fr[:, 0], 50, color=cols[0], label="1", alpha=.75)
-    ax.hist(fr[:, 1], 50, color=cols[1], label="2", alpha=.75)
-    ax.hist(fr[:, 2], 50, color=cols[2], label="3", alpha=.75)
-    ax.hist(fr[:, 3], 50, color=cols[3], label="4", alpha=.75)
+    mx = np.maximum(max_idx, len(trace))
+    ax.hist(fr[:mx, 0], 50, color=cols[0], label="1", alpha=.75)
+    ax.hist(fr[:mx, 1], 50, color=cols[1], label="2", alpha=.75)
+    ax.hist(fr[:mx, 2], 50, color=cols[2], label="3", alpha=.75)
+    ax.hist(fr[:mx, 3], 50, color=cols[3], label="4", alpha=.75)
 
     leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),
                      loc="center left", frameon=False)
     leg._legend_box.align = "left"
     plt.xlabel("")
+    plt.xticks([])
     plt.ylabel("")
     plt.title(title, loc="Left")
 

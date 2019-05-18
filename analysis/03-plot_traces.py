@@ -44,7 +44,7 @@ def _plot_network(graph, data, out_dir):
       data["graph"].subgraph(["PSMB1", "POLR1B"]), pos=pos,
       nodelist=list(["PSMB1", "POLR1B"]), node_size=300,
       node_color='#E84646', font_size=15, alpha=.9,
-      label="Essential genes\nwith low-quality sgRNAs")
+      label="No")
     networkx.draw_networkx_nodes(
       data["graph"], pos=pos,
       nodelist=list(data['nonessential_genes']), node_size=300,
@@ -81,20 +81,17 @@ def _plot_forest(trace, data, model, out_dir):
 
 
 def _plot_trace(trace, model, out_dir):
-    n_g = trace['gamma'].shape[1]
-
     fig, ax = sp.plot_neff(trace, "gamma")
-    fig.set_size_inches(8, 5)
+    fig.set_size_inches(10, 4)
     plt.savefig(out_dir + "/gamma_neff.svg")
     plt.savefig(out_dir + "/gamma_neff.pdf")
     plt.close('all')
 
     fig, ax = sp.plot_rhat(trace, "gamma")
-    fig.set_size_inches(8, 5)
+    fig.set_size_inches(10, 4)
     plt.savefig(out_dir + "/gamma_rhat.pdf")
     plt.savefig(out_dir + "/gamma_rhat.svg")
     plt.close('all')
-
 
 
 def _plot_hist(trace, model, out_dir):
@@ -111,6 +108,7 @@ def _plot_hist(trace, model, out_dir):
 def _write_params(model, data, trace, out_dir):
     gamma_true = data['gamma']
     beta_true = data['beta']
+
     gamma_pred_mean = numpy.mean(trace['gamma'], 0)[
         list(model._index_to_gene.keys())]
     beta_pred_mean = numpy.mean(trace['beta'], 0)[
@@ -124,9 +122,14 @@ def _write_params(model, data, trace, out_dir):
       out_dir + "/beta.tsv", sep="\t", index=False)
 
 
-def _plot_posterior_labels(trace, genes, out_dir):
+def _plot_posterior_labels(trace, model, out_dir):
     if 'z' in trace.varnames:
-        ax = sp.plot_posterior_labels(trace, genes)
+        sns.set(rc={'figure.figsize': (10, 4)})
+        ax = sp.plot_posterior_labels(
+          trace,
+          [model._index_to_gene[x] for x in
+           sorted(model._index_to_gene.keys())])
+        plt.tight_layout()
         plt.savefig(out_dir + "/posterior_labels.pdf")
         plt.savefig(out_dir + "/posterior_labels.svg")
         plt.close('all')
@@ -146,7 +149,7 @@ def plot_model(graph, data, readout, trace, ppc_trace,
     print("forest")
     _plot_forest(trace, data, model, out_dir)
     print("labels")
-    _plot_posterior_labels(trace, data["genes"], out_dir)
+    _plot_posterior_labels(trace, model, out_dir)
 
 
 @click.command()

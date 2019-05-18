@@ -21,7 +21,7 @@ sns.set_style(
 
 
 def _plot_dotline(table, boundary, var, low, mid, high,
-                  legend, title, xlabel, xlim):
+                  legend, title, xlabel, xlim, xticks):
     fig, ax = plt.subplots()
 
     plt.axvline(x=boundary[0], color="grey", linestyle="--", linewidth=.5)
@@ -46,8 +46,7 @@ def _plot_dotline(table, boundary, var, low, mid, high,
              label="${} < {}$".format(legend, boundary[1]))
     plt.plot(table[var].values[high], table["param"].values[high],
              "o", markersize=3, color="#74a9cf",
-             label="${} >= {}$".format(legend, boundary[1]))
-
+             label="${} \geq {}$".format(legend, boundary[1]))
     plt.title(title, loc="Left")
     plt.legend(bbox_to_anchor=(1.0, 0.5), loc="center left", frameon=False)
     plt.xlabel(xlabel)
@@ -55,6 +54,9 @@ def _plot_dotline(table, boundary, var, low, mid, high,
     plt.tick_params(axis=None)
     plt.yticks([])
     plt.xlim(left=xlim)
+    plt.xticks(xticks, xticks)
+    ax.spines['left'].set_color('grey')
+    ax.spines['bottom'].set_color('grey')
     plt.tight_layout()
     return fig, ax
 
@@ -132,7 +134,8 @@ def plot_neff(trace, var_name, variable=None):
 
     return _plot_dotline(eff_samples, boundary, "neff",
                          low, mid, high,
-                         "n_eff / n", "Effective sample size", "n_eff / n", 0)
+                         "n_eff / n", "Effective sample size", "n_eff / n",
+                         -.1, [0.1, .5, 1])
 
 
 def plot_rhat(trace, var_name, variable=None):
@@ -152,7 +155,7 @@ def plot_rhat(trace, var_name, variable=None):
     return _plot_dotline(rhat_samples, boundary, "rhat",
                          low, mid, high, r"\hat{R}",
                          "Potential scale reduction factor", r"$\hat{R}$",
-                         xlim=1)
+                         0.95, [1, 1.05, 1.1, 1.5])
 
 
 def plot_parallel(trace):
@@ -194,24 +197,26 @@ def plot_trace(trace, var_name, idx, title=""):
     return fig, ax
 
 
-def plot_hist(trace, var_name, idx, title="", max_idx=1000):
+def plot_hist(trace, var_name, idx, title="", bins=60):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
 
     fig, ax = plt.subplots()
     cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
-    mx = np.maximum(max_idx, len(trace))
-    ax.hist(fr[:mx, 0], 50, color=cols[0], label="1", alpha=.75)
-    ax.hist(fr[:mx, 1], 50, color=cols[1], label="2", alpha=.75)
-    ax.hist(fr[:mx, 2], 50, color=cols[2], label="3", alpha=.75)
-    ax.hist(fr[:mx, 3], 50, color=cols[3], label="4", alpha=.75)
+    me = np.round(np.mean(fr), 2)
+
+    ax.hist(fr[:, 0], color=cols[0], label="1", alpha=.75, bins=bins)
+    ax.hist(fr[:, 1], color=cols[1], label="2", alpha=.75, bins=bins)
+    ax.hist(fr[:, 2], color=cols[2], label="3", alpha=.75, bins=bins)
+    ax.hist(fr[:, 3], color=cols[3], label="4", alpha=.75, bins=bins)
+    plt.axvline(x=me, color="grey", linestyle="--", linewidth=.5)
 
     leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),
                      loc="center left", frameon=False)
     leg._legend_box.align = "left"
     plt.xlabel("")
-    plt.xticks([])
+    plt.xticks([me], [me])
     plt.ylabel("")
     plt.title(title, loc="Left")
 
@@ -260,8 +265,9 @@ def plot_posterior_labels(trace, genes, cols=["#E84646", "#316675"]):
                      linewidth=2.5, edgecolor=".2")
     ax.set_ylim(0, 1)
     sns.despine()
-    plt.xticks(rotation=90)
+    plt.xlabel('')
+    plt.xticks(rotation=90, fontsize=10)
     plt.title('Posterior class labels', loc='left', fontsize=16)
     plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
-               borderpad=1, bbox_to_anchor=(1.5, 0.5), ncol=1)
+               borderpad=1, bbox_to_anchor=(1.25, 0.5), ncol=1)
     return ax

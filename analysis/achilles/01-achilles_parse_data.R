@@ -1,12 +1,14 @@
 library(tidyverse)
 library(data.table)
 
-sample_info   <- readr::read_csv("../../data_raw/Achilles-sample_info.csv")
-replicate_map <- readr::read_csv("../../data_raw/Achilles_replicate_map.csv")
-bad_guides    <- readr::read_csv("../../data_raw/Achilles_dropped_guides.csv")
-guides_map    <- readr::read_csv("../../data_raw/Achilles_guide_map.csv")
-gene2string   <- readr::read_tsv("../../data_raw/gene2string.tsv")
-dt <- data.table::fread("../../data_raw/Achilles_logfold_change.csv", sep = ",")
+
+sample_info   <- readr::read_csv("../../data_raw/achilles_full/Achilles-sample_info.csv")
+replicate_map <- readr::read_csv("../../data_raw/achilles_full/Achilles_replicate_map.csv")
+bad_guides    <- readr::read_csv("../../data_raw/achilles_full/Achilles_dropped_guides.csv")
+guides_map    <- readr::read_csv("../../data_raw/achilles_full/Achilles_guide_map.csv")
+gene2string   <- readr::read_tsv("../../data_raw/achilles_full/gene2string.tsv")
+dt   <- data.table::fread("../../data_raw/achilles_full/Achilles_logfold_change.csv", sep = ",")
+ccle <- readr::read_csv("../../data_raw/achilles_full/CCLE_gene_cn.csv")
 
 
 dep_map_ids <- sample_info %>%
@@ -45,15 +47,30 @@ gene2string <- gene2string %>%
   dplyr::filter(gene  %in% dt$gene)
 dt <- dplyr::left_join(gene2string, dt, by="gene")
 
+ccle <- ccle %>%
+  dplyr::filter(X1 %in% dep_map_ids$id) %>%
+  tidyr::gather(gene, cn, -X1) %>%
+  dplyr::rename(id = X1) %>%
+  tidyr::separate(gene, c("gene", "noise"), " ") %>%
+  dplyr::select(-noise) %>%
+  left_join(replicate_map, by="id") %>%
+  dplyr::rename(replicate = replicate_ID) %>%
+  dplyr::select(replicate, gene, cn) %>%
+  dplyr::rename(replicate = replicate_ID) %>%
+  dplyr::select(replicate, gene, cn)
+
 dt <- dt %>%
   tidyr::gather("replicate", "readout", -gene, -string, -sgRNA) %>%
   dplyr::arrange(gene, sgRNA, replicate) %>%
+  dplyr::left_join(ccle, by=c("gene", "replicate")) %>%
   tidyr::separate(replicate, c("condition", "replicate"), " Rep ") %>%
   tidyr::separate(replicate, c("replicate", "garbage"), " ") %>%
-  dplyr::select(gene, condition, sgRNA, string, replicate, readout) %>%
+  dplyr::select(gene, condition, sgRNA, string, replicate, cn, readout) %>%
   dplyr::rename(intervention = sgRNA)
 
-
-readr::write_csv(dep_map_ids, "./data_raw/achilles-sample_info_subset.csv")
-readr::write_csv(replicate_map, "./data_raw/achilles-replicate_map_subset.csv")
-readr::write_csv(dt, "./data_raw/achilles-log_fc.csv")
+readr::write_csv(dep_map_ids, "../../data_raw/achilles-sample_info.csv")
+readr::write_csv(replicate_map, "../../data_raw/achilles-replicate_map.csv")
+readr::write_csv(guides_map, "../../data_raw/achilles-guides_map.csv")
+readr::write_csv(ccle, "../../data_raw/achilles-ccle.csv")
+readr::write_csv(gene2string, "../../data_raw/achilles-gene2string.csv")
+readr::write_csv(dt, "../../data_raw/achilles-log_fc.csv")

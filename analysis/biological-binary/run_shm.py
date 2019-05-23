@@ -32,7 +32,8 @@ def _load_data(infile, family):
             READOUT, COPYNUMBER, AFFINITY]
     for c in cols:
         if c not in dat.columns:
-            raise ValueError("Check your column names. Should have: {}".format(c))
+            raise ValueError(
+                "Check your column names. Should have: {}".format(c))
     return dat
 
 
@@ -53,8 +54,9 @@ def cli():
 
 
 @cli.command()
-@click.argument("infile", type=str)
+@click.argument("data_file", type=str)
 @click.argument("outfile", type=str)
+@click.argument("graph", type=str)
 @click.option('--family',
               type=click.Choice(["gaussian", "poisson"]),
               default="gaussian")
@@ -64,19 +66,18 @@ def cli():
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--nchain", type=int, default=4)
-@click.option("--graph", type=str, default=None)
-def sample(infile, outfile, family, model, ntune, ndraw, nchain, graph):
-    read_counts = _load_data(infile, family)
+def sample(data_file, outfile, graph, family, model, ntune, ndraw, nchain):
+    read_counts = _load_data(data_file, family)
     link_function = Link.identity if family == "gaussian" else Link.log
     family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)
 
     with CopynumberHLM(data=read_counts,
-             family=family,
-             link_function=link_function,
-             model=model,
-             sampler="nuts",
-             graph=graph,
+                       family=family,
+                       link_function=link_function,
+                       model=model,
+                       sampler="nuts",
+                       graph=graph,
                        use_affinity=True) as model:
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)

@@ -10,8 +10,6 @@ from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
 from shm.models.hlm import HLM
-from shm.models.hm import HM
-from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -27,13 +25,13 @@ class CopynumberHLM(HLM):
                  graph=None,
                  sampler="metropolis",
                  use_affinity=False):
+        self._use_affinity = use_affinity
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
                          model=model,
                          graph=graph,
                          sampler=sampler)
-        self._use_affinity = use_affinity
 
     @property
     def model(self):

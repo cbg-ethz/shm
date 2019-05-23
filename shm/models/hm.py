@@ -175,7 +175,6 @@ class HM(ABC):
     def n_gene_condition(self):
         return self.__len_gene_cond
 
-    # TODO: add methods that map gene to gamma/beta, etc.
     def _set_data(self):
         data = self.__data
         self.__n, _ = data.shape

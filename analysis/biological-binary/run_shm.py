@@ -5,14 +5,12 @@ import pickle
 import warnings
 
 import click
-import networkx
 import numpy
 import pandas as pd
 import pymc3 as pm
 import scipy as sp
 
 from shm.family import Family
-from shm.globals import GENE
 from shm.link import Link
 from shm.models.hlm import HLM
 

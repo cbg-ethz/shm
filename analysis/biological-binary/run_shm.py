@@ -11,8 +11,10 @@ import pymc3 as pm
 import scipy as sp
 
 from shm.family import Family
+from shm.globals import READOUT, INTERVENTION, CONDITION, GENE, REPLICATE, \
+    COPYNUMBER, AFFINITY
 from shm.link import Link
-from shm.models.hlm import HLM
+from shm.models.copynumber_hlm import CopynumberHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")
@@ -25,12 +27,12 @@ logger.addHandler(logging.StreamHandler())
 def _load_data(infile, family):
     dat = pd.read_csv(infile, sep="\t")
     if family != "gaussian":
-        dat["readout"] = sp.floor(dat["readout"].values)
-    cols = ["gene", "condition", "intervention", "replicate", "readout"]
+        dat[READOUT] = sp.floor(dat[READOUT].values)
+    cols = [GENE, CONDITION, INTERVENTION, REPLICATE,
+            READOUT, COPYNUMBER, AFFINITY]
     for c in cols:
         if c not in dat.columns:
             raise ValueError("Check your column names. Should have: {}".format(c))
-
     return dat
 
 
@@ -69,12 +71,13 @@ def sample(infile, outfile, family, model, ntune, ndraw, nchain, graph):
     family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)
 
-    with HLM(data=read_counts,
+    with CopynumberHLM(data=read_counts,
              family=family,
              link_function=link_function,
              model=model,
              sampler="nuts",
-             graph=graph) as model:
+             graph=graph,
+                       use_affinity=True) as model:
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 

@@ -2,14 +2,14 @@ library(tidyverse)
 library(data.table)
 
 
-sample_info   <- readr::read_csv("../../data_raw/achilles_full/Achilles-sample_info.csv")
-replicate_map <- readr::read_csv("../../data_raw/achilles_full/Achilles_replicate_map.csv")
-bad_guides    <- readr::read_csv("../../data_raw/achilles_full/Achilles_dropped_guides.csv")
-guides_map    <- readr::read_csv("../../data_raw/achilles_full/Achilles_guide_map.csv")
-root_scores   <- readr::read_tsv("../../data_raw/achilles_full/Achilles-avana_rs2.tsv")
-gene2string   <- readr::read_tsv("../../data_raw/achilles_full/gene2string.tsv")
-dt   <- data.table::fread("../../data_raw/achilles_full/Achilles_logfold_change.csv", sep = ",")
-ccle <- readr::read_csv("../../data_raw/achilles_full/CCLE_gene_cn.csv")
+sample_info   <- readr::read_csv("../../data_raw/achilles/full_data/Achilles-sample_info.csv")
+replicate_map <- readr::read_csv("../../data_raw/achilles/full_data/Achilles_replicate_map.csv")
+bad_guides    <- readr::read_csv("../../data_raw/achilles/full_data/Achilles_dropped_guides.csv")
+guides_map    <- readr::read_csv("../../data_raw/achilles/full_data/Achilles_guide_map.csv")
+root_scores   <- readr::read_tsv("../../data_raw/achilles/full_data/Achilles-avana_rs2.tsv")
+gene2string   <- readr::read_tsv("../../data_raw/achilles/full_data/gene2string.tsv")
+dt   <- data.table::fread("../../data_raw/achilles/full_data/Achilles_logfold_change.csv", sep = ",")
+ccle <- readr::read_csv("../../data_raw/achilles/full_data/CCLE_gene_cn.csv")
 
 
 dep_map_ids <- sample_info %>%
@@ -61,7 +61,8 @@ ccle <- ccle %>%
   dplyr::select(-noise) %>%
   left_join(replicate_map, by="id") %>%
   dplyr::rename(replicate = replicate_ID) %>%
-  dplyr::select(replicate, gene, cn)
+  dplyr::select(replicate, gene, cn) %>%
+  dplyr::mutate(cn = cn)
 
 dt <- dt %>%
   tidyr::gather("replicate", "readout", -gene, -string, -sgRNA, -rs) %>%
@@ -70,13 +71,13 @@ dt <- dt %>%
   tidyr::separate(replicate, c("condition", "replicate"), " Rep ") %>%
   tidyr::separate(replicate, c("replicate", "garbage"), " ") %>%
   dplyr::select(gene, condition, sgRNA, string, replicate, cn, rs, readout) %>%
-  dplyr::rename(intervention = sgRNA) %>%
-  dplyr::filter(!is.na(rs) & !is.na(cn) & !is.na(readout))
+  dplyr::rename(intervention = sgRNA, copynumber=cn, affinity=rs) %>%
+  dplyr::filter(!is.na(affinity) & !is.na(copynumber) & !is.na(readout))
 
-readr::write_csv(root_scores, "../../data_raw/achilles-rs.csv")
-readr::write_csv(dep_map_ids, "../../data_raw/achilles-sample_info.csv")
-readr::write_csv(replicate_map, "../../data_raw/achilles-replicate_map.csv")
-readr::write_csv(guides_map, "../../data_raw/achilles-guides_map.csv")
-readr::write_csv(ccle, "../../data_raw/achilles-ccle.csv")
-readr::write_csv(gene2string, "../../data_raw/achilles-gene2string.csv")
-readr::write_csv(dt, "../../data_raw/achilles-log_fc.csv")
+readr::write_csv(root_scores, "../../data_raw/achilles/achilles-rs.csv")
+readr::write_csv(dep_map_ids, "../../data_raw/achilles/achilles-sample_info.csv")
+readr::write_csv(replicate_map, "../../data_raw/achilles/achilles-replicate_map.csv")
+readr::write_csv(guides_map, "../../data_raw/achilles/achilles-guides_map.csv")
+readr::write_csv(ccle, "../../data_raw/achilles/achilles-ccle.csv")
+readr::write_csv(gene2string, "../../data_raw/achilles/achilles-gene2string.csv")
+readr::write_csv(dt, "../../data_raw/achilles/achilles-log_fc.csv")

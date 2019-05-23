@@ -1,13 +1,13 @@
 library(tidyverse)
 library(data.table)
 library(igraph)
+library(ggraph)
 
-
-string_db      <- data.table::fread("../../data_raw/achilles-ppi.csv")
-non_essentials <- readr::read_csv("../../data_raw/achilles-common_nonessentials.csv")
-essentials     <- readr::read_csv("../../data_raw/achilles-common_essentials.csv")
-graph_table    <- readr::read_csv("../../data_raw/achilles-ppi.csv")
-dt             <- readr::read_csv("../../data_raw/achilles-log_fc.csv")
+string_db      <- data.table::fread("../../data_raw/achilles/achilles-ppi.csv")
+non_essentials <- readr::read_csv("../../data_raw/achilles/achilles-common_nonessentials.csv")
+essentials     <- readr::read_csv("../../data_raw/achilles/achilles-common_essentials.csv")
+graph_table    <- readr::read_csv("../../data_raw/achilles/achilles-ppi.csv")
+dt             <- readr::read_csv("../../data_raw/achilles/achilles-log_fc.csv")
 
 
 essentials <- bind_rows(tibble(gene=essentials$gene, essential=TRUE),
@@ -37,11 +37,26 @@ dt <- dt[dt$gene %in% V(graph)$name,]
 assertthat::assert_that(all(unique(dt$gene) %in% V(graph)$name))
 assertthat::assert_that(all(V(graph)$name %in% unique(dt$gene)))
 
-graph <- cbind(as_data_frame(graph)[, c(1, 2)], weight=1)
-
+################################################################################
 data.table::fwrite(
   dt,
   "../../data_raw/biological_binary-data.tsv", sep="\t")
 data.table::fwrite(
-  graph,
+  cbind(as_data_frame(graph)[, c(1, 2)], weight=1),
   "../../data_raw/biological_binary-graph.tsv", sep="\t")
+
+################################################################################
+
+graph <- igraph::induced_subgraph(graph, c(3, 10))
+dt <- dt[which(dt$gene %in% V(graph)$name), ]
+
+assertthat::assert_that(all(unique(dt$gene) %in% V(graph)$name))
+assertthat::assert_that(all(V(graph)$name %in% unique(dt$gene)))
+
+data.table::fwrite(
+  dt,
+  "../../data_raw/biological_binary-small_data.tsv", sep="\t")
+data.table::fwrite(
+  cbind(as_data_frame(graph)[, c(1, 2)], weight=1),
+  "../../data_raw/biological_binary-small_graph.tsv", sep="\t")
+

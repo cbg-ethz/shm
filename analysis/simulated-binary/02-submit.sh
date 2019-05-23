@@ -1,21 +1,5 @@
 #!/usr/bin/env bash
 
-
-function test_run {
-	echo "Running tests"
-	for i in "simple" "mrf" "clustering";
-    do
-        bsub -W 4:00 -n 1 -R "rusage[mem=15000]" python run_shm.py sample \
-	        ../data_raw/simulated_data.tsv \
-            "/cluster/home/simondi/simondi/data/shm/test-${i}_model" \
-            --family gaussian \
-            --ntune 100 \
-            --ndraw 100 \
-            --model ${i} \
-            --graph ../data_raw/graph.pickle
-    done
-}
-
 function submit_run {
 	echo "Submitting jobs"
 	for i in "simple" "mrf" "clustering";
@@ -36,15 +20,13 @@ function submit_run {
 
 
 function usage {
-	echo -e "USAGE:\t$0 [submit|test]\n"
+	echo -e "USAGE:\t$0 [submit]\n"
 	exit
 }
 
 
 if [ $# -eq 0 ]; then
    usage
-elif [ $1 == "test" ]; then
-   test_run
 elif [ $1 == "submit" ]; then
    submit_run
 fi

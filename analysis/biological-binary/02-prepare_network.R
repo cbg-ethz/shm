@@ -2,8 +2,8 @@ library(tidyverse)
 library(data.table)
 
 
-string_db <- data.table::fread("../../data_raw/achilles_full/string_db.tsv")
-dt <- readr::read_csv("../../data_raw/achilles-log_fc.csv")
+string_db <- data.table::fread("../../data_raw/achilles/full_data/string_db.tsv")
+dt <- readr::read_csv("../../data_raw/achilles/achilles-log_fc.csv")
 
 
 str_uniq <- unique(dt$string)
@@ -20,4 +20,4 @@ string_db <- string_db %>%
     gene2 = gene2string$gene[match(protein2, gene2string$string)]) %>%
   dplyr::select(gene1, gene2, protein1:combined_score)
 
-readr::write_csv(string_db, "../../data_raw/achilles-ppi.csv")
+readr::write_csv(string_db, "../../data_raw/achilles/achilles-ppi.csv")

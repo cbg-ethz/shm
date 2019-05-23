@@ -37,9 +37,11 @@ dt <- dt[dt$gene %in% V(graph)$name,]
 assertthat::assert_that(all(unique(dt$gene) %in% V(graph)$name))
 assertthat::assert_that(all(V(graph)$name %in% unique(dt$gene)))
 
+graph <- cbind(as_data_frame(graph)[1:10, c(1, 2)], weight=1)
+
 data.table::fwrite(
   dt,
-  "../../data_raw/biological_binary-data.csv", sep=",")
+  "../../data_raw/biological_binary-data.tsv", sep="\t")
 data.table::fwrite(
-  igraph::as_data_frame(graph),
-  "../../data_raw/biological_binary-graph.csv", sep=",")
+  graph,
+  "../../data_raw/biological_binary-graph.tsv", sep="\t")

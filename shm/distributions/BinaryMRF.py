@@ -10,6 +10,7 @@ from shm.globals import ESSENTIAL, NON_ESSENTIAL
 
 
 class BinaryMRF(Discrete):
+    NAME = "BinaryMRF"
     def __init__(self, G: networkx.Graph, *args, **kwargs):
         self.__node_labels = numpy.sort(G.nodes())
         self.__adj = networkx.to_numpy_matrix(
@@ -21,6 +22,10 @@ class BinaryMRF(Discrete):
         self.__choice = scipy.stats.bernoulli.rvs
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
         self.__blanket = {}
+
+    @property
+    def name(self):
+        return BinaryMRF.NAME
 
     @property
     def n_nodes(self):

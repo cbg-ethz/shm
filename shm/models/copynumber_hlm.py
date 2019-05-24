@@ -10,6 +10,7 @@ from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
 from shm.models.hlm import HLM
+from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -66,7 +67,7 @@ class CopynumberHLM(HLM):
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
-            c = pm.Normal("cn", 1, 1)
+            c = pm.Normal("cn", 1, 1, shape=1)
 
             if self._use_affinity:
                 q = self.data[AFFINITY].values
@@ -75,7 +76,7 @@ class CopynumberHLM(HLM):
             mu = q * (gamma[self._gene_data_idx] +
                       beta[self._gene_cond_data_idx]) + \
                  l[self._intervention_data_idx] + \
-                 c * self.data[COPYNUMBER]
+                 c * self.data[COPYNUMBER].values
 
             if self.family == Family.gaussian:
                 sd = pm.InverseGamma("sd", alpha=2., beta=1., shape=1)
@@ -103,15 +104,19 @@ class CopynumberHLM(HLM):
             z = pm.Categorical("z", p=p, shape=self.n_genes)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
         param_hlm = self.__hlm(model, gamma)
-        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
+        self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
         return self
 
     def _set_steps(self, model, z, *params):
         with model:
             self._continuous_step = self.sampler(params)
             if z is not None:
-                self._discrete_step = pm.CategoricalGibbsMetropolis([z])
-                self.__steps = [self._discrete_step, self._continuous_step]
+                if hasattr(z.distribution, "name") and \
+                  z.distribution.name == BinaryMRF.NAME:
+                    self._discrete_step = RandomFieldGibbs([z])
+                else:
+                    self._discrete_step = pm.CategoricalGibbsMetropolis([z])
+                self.__steps = [self._continuous_step, self._discrete_step]
             else:
                 self.__steps = [self._continuous_step]
         self.__model = model

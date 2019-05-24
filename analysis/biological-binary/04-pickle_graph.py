@@ -6,12 +6,6 @@ import click
 import networkx
 
 
-def read_graph(infile):
-    with open(infile, "rb") as fh:
-        G = pickle.load(fh)
-    return G
-
-
 @click.command()
 @click.argument('graph_file')
 def run(graph_file):

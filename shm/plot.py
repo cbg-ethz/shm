@@ -201,15 +201,13 @@ def plot_hist(trace, var_name, idx, title="", bins=60):
     fr = _to_df(trace, var_name, idx)
     fr = fr[["sample", "Chain", "idxx"]].pivot(index="idxx", columns="Chain")
     fr = fr.values
-
+    n, p = fr.shape
     fig, ax = plt.subplots()
-    cols = sns.cubehelix_palette(4, start=.5, rot=-.75).as_hex()
-    me = np.round(np.mean(fr), 2)
 
-    ax.hist(fr[:, 0], color=cols[0], label="1", alpha=.75, bins=bins)
-    ax.hist(fr[:, 1], color=cols[1], label="2", alpha=.75, bins=bins)
-    ax.hist(fr[:, 2], color=cols[2], label="3", alpha=.75, bins=bins)
-    ax.hist(fr[:, 3], color=cols[3], label="4", alpha=.75, bins=bins)
+    cols = sns.cubehelix_palette(p, start=.5, rot=-.75).as_hex()
+    me = np.round(np.mean(fr), 2)
+    for i in range(p):
+        ax.hist(fr[:, i], color=cols[i], label=str(i + 1), alpha=.75, bins=bins)
     plt.axvline(x=me, color="grey", linestyle="--", linewidth=.5)
 
     leg = plt.legend(title="Chain", bbox_to_anchor=(.95, 0.5),

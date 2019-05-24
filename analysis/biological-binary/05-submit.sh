@@ -12,6 +12,7 @@ function submit_run {
             --family gaussian \
             --ntune 100000 \
             --ndraw 30000 \
+            --nchain 4 \
             --model ${i}
     done
 }

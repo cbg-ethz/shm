@@ -40,12 +40,12 @@
 	\node[ below right=1cm and .25cm of g4] (b42) {$\dots$};
 		
 	\node[obs, ultra thick, below left=1cm and .75cm of b11] (x111) {};
-	\node[obs, ultra thick, below right=1cm and .75cm of b11] (x112) {};
+	\node[ below right=1cm and .75cm of b11] (x112) {$\cdots$};
 	\node[below =.05cm of x111,align=center] () {$x_{1,c_1,s_1}$}; 
-	\node[below =.05cm of x112,align=center] () {$x_{1,c_1,s_2}$}; 
 
 	\node[latent, ultra thick, left = of x111] (l1) {$l_{s_1}$};
-	\node[latent, ultra thick, right = of x112] (l2) {$l_{s_2}$};
+	\node[obs, ultra thick, above =.5cm of l1,align=center] (cn1) {}; 
+	\node[above =.05cm of cn1,align=center] () {$c_{1,c_1}$}; 
 
 	\draw [thick] (z1) -- (z2);
 	\draw [thick] (z2) -- (z3);
@@ -61,7 +61,7 @@
 	\edge [thick] {b11} {x111};
 	\edge [thick] {b11} {x112};
 	\edge [thick] {l1} {x111};
-	\edge [thick] {l2} {x112};
+	\edge [thick] {cn1} {x111};
 	\edge [thick] {z1} {g1};
 	\edge [thick] {z2} {g2};
 	\edge [thick] {z3} {g3};

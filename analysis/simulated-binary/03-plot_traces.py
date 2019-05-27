@@ -43,8 +43,7 @@ def _plot_network(graph, data, out_dir):
     networkx.draw_networkx_nodes(
       data["graph"].subgraph(["PSMB1", "POLR1B"]), pos=pos,
       nodelist=list(["PSMB1", "POLR1B"]), node_size=300,
-      node_color='#E84646', font_size=15, alpha=.9,
-      label="No")
+      node_color='black', font_size=15, alpha=.9)
     networkx.draw_networkx_nodes(
       data["graph"], pos=pos,
       nodelist=list(data['nonessential_genes']), node_size=300,
@@ -140,16 +139,16 @@ def plot_model(graph, data, readout, trace, ppc_trace,
     _write_params(model, data, trace, out_dir)
     print("network")
     _plot_network(graph, data, out_dir)
-    print("data")
-    _plot_data(readout, ppc_trace, out_dir)
-    print("trace")
-    _plot_trace(trace, model, out_dir)
-    print("hist")
-    _plot_hist(trace, model, out_dir)
-    print("forest")
-    _plot_forest(trace, data, model, out_dir)
-    print("labels")
-    _plot_posterior_labels(trace, model, out_dir)
+    # print("data")
+    # _plot_data(readout, ppc_trace, out_dir)
+    # print("trace")
+    # _plot_trace(trace, model, out_dir)
+    # print("hist")
+    # _plot_hist(trace, model, out_dir)
+    # print("forest")
+    # _plot_forest(trace, data, model, out_dir)
+    # print("labels")
+    # _plot_posterior_labels(trace, model, out_dir)
 
 
 @click.command()
@@ -168,11 +167,11 @@ def run(trace, readout_file, graph_file, pickl_file, model_type):
 
     with HLM(readout, model=model_type, graph=graph) as model:
         trace = pm.load_trace(trace, model=model.model)
-        ppc_trace = pm.sample_posterior_predictive(trace, 10000, model.model)
+        #ppc_trace = pm.sample_posterior_predictive(trace, 10000, model.model)
 
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-    plot_model(graph, data, readout, trace, ppc_trace,
+    plot_model(graph, data, readout, trace, None,
                trace, model, out_dir)
 
 

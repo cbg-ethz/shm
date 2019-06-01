@@ -6,11 +6,13 @@ import networkx
 import numpy
 from pymc3 import Discrete
 
+from shm.distributions.categorical_mrf import CategoricalMRF
 from shm.globals import ESSENTIAL, NON_ESSENTIAL
 
 
-class BinaryMRF(Discrete):
+class BinaryMRF(CategoricalMRF):
     NAME = "BinaryMRF"
+
     def __init__(self, G: networkx.Graph, *args, **kwargs):
         self.__node_labels = numpy.sort(G.nodes())
         self.__adj = networkx.to_numpy_matrix(

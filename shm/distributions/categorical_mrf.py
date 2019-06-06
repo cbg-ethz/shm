@@ -18,9 +18,9 @@ class CategoricalMRF(Discrete):
         super(CategoricalMRF, self).__init__(shape=self.__n, *args, **kwargs)
 
         self.mode = scipy.repeat(0, self.__n)
-        self.__choice = scipy.stats.multinomial
-        # TODO
-        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
+        self.__choice = numpy.random.choice
+        self.__classes = numpy.arange(k)
+        self.__point = self.__choice(self.__classes, size=self.__n)
         self.__blanket = {}
 
     @property

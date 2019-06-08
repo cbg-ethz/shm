@@ -51,13 +51,15 @@ class CategoricalMRF(Discrete):
 
     def _log_node_potentials(self, gamma, mu, tau):
         loglik = self._loglik(gamma, mu, tau)
-        return loglik[:, ESSENTIAL] - loglik[:, NON_ESSENTIAL]
+        return loglik
 
     def _gibbs(self, idx, point, node_potentials=None):
         node_pot = self._log_node_potential(node_potentials, idx)
         edge_pot = self._log_edge_potential(point, idx)
-        p = scipy.special.expit(edge_pot + node_pot)
-        return self.__choice(p)
+        # TODO
+        potentials = edge_pot + node_pot
+        probabilities /= np.sum(potentials)
+        return self.__choice(potentials)
 
     def _log_node_potential(self, node_potentials, idx):
         if node_potentials is None:

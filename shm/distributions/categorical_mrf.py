@@ -58,8 +58,8 @@ class CategoricalMRF(Discrete):
         edge_pot = self._log_edge_potential(point, idx)
         # TODO
         potentials = edge_pot + node_pot
-        probabilities /= np.sum(potentials)
-        return self.__choice(potentials)
+        probabilities = potentials / numpy.sum(potentials)
+        return self.__choice(self.__classes, p=probabilities)
 
     def _log_node_potential(self, node_potentials, idx):
         if node_potentials is None:

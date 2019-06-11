@@ -57,7 +57,10 @@ class CategoricalMRF(Discrete):
         node_pot = self._log_node_potential(node_potentials, idx)
         edge_pot = self._log_edge_potential(point, idx)
         # TODO: is that correct ?
-        potentials = edge_pot + node_pot
+        # check if all on a log scale then it is correct
+        # normalisation should be incorrect though
+        # we need to pow this iback otherwise probs are on log-scale
+        potentials = scipy.power(2, edge_pot + node_pot)
         probabilities = potentials / numpy.sum(potentials)
         return self.__choice(self.__classes, p=probabilities)
 
@@ -78,7 +81,7 @@ class CategoricalMRF(Discrete):
             numpy.sum((blanket_labs == i) * mb_weights)
             for i in self.__classes
         ]
-        return potentials
+        return scipy.column_stack(potentials)
 
     def _markov_blank(self, idx):
         if idx in self.__blanket:
@@ -90,14 +93,15 @@ class CategoricalMRF(Discrete):
         return blanket
 
     def _loglik(self, gamma, mu, tau):
-        if len(tau) == 2:
-            tau_0, tau_1 = tau[NON_ESSENTIAL], tau[ESSENTIAL]
-        else:
-            tau_0, tau_1 = tau, tau
-        non = scipy.log2(scipy.stats.norm.pdf(gamma, mu[NON_ESSENTIAL], tau_0))
-        ess = scipy.log2(scipy.stats.norm.pdf(gamma, mu[ESSENTIAL], tau_1))
-        return scipy.column_stack((non, ess))
+        if isinstance(1, int) or len(1) == 1:
+            tau = numpy.tile(tau, self.__k)
+        ess = [
+            scipy.log2(scipy.stats.norm.pdf(gamma, mu[i], tau[i]))
+            for i in self.__classes
+        ]
+        return scipy.column_stack(ess)
 
     def _repr_latex_(self, name=None, dist=None):
-        name = r'\text{%s}' % name
-        return r'${} \sim \text{{BinaryMRF}}(\dots)$'.format(name)
+        name = r'\text{{{}}}'.format(name)
+        return r'${} \sim \text{{{}}}(\dots)$'.format(
+          name, CategoricalMRF.NAME)

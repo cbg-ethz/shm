@@ -36,33 +36,7 @@ class CopynumberHLM(HLM):
                          graph=graph,
                          sampler=sampler)
 
-    @property
-    def model(self):
-        return self.__model
-
-    @property
-    def _steps(self):
-        return self.__steps
-
-    def sample(self, draws=1000, tune=1000, chains=None, seed=23):
-        with self.model:
-            logger.info("Sampling {}/{} times".format(draws, tune))
-            trace = pm.sample(
-              draws=draws, tune=tune, chains=chains, cores=1,
-              step=self._steps, random_seed=seed, progressbar=False)
-        return trace
-
-    def __gamma_mix(self, model, z):
-        with model:
-            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=2)
-            mean_g = pm.Normal("mu_g", mu=np.array([0., -1.]), sd=1, shape=2)
-            pm.Potential(
-              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0., -np.inf, 0.))
-            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
-
-        return tau_g, mean_g, gamma
-
-    def __hlm(self, model, gamma):
+    def _hlm(self, model, gamma):
         with model:
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)

@@ -3,6 +3,7 @@ import logging
 from abc import ABC
 
 import pandas as pd
+import pymc3
 import scipy as sp
 from sklearn.preprocessing import LabelEncoder
 
@@ -17,7 +18,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-class HM(ABC):
+class SHM(ABC):
     def __init__(self,
                  data: pd.DataFrame,
                  family=Family.gaussian,
@@ -26,17 +27,19 @@ class HM(ABC):
                  n_states=2,
                  graph=None,
                  sampler=Sampler.metropolis):
-        self.__data = data
-        self.__graph = graph
-        self.__n_states = n_states
-        if self.__n_states not in [2, 3]:
+
+        self._data = data
+        self._graph = graph
+        self._n_states = n_states
+        if self._n_states not in [2, 3]:
             raise ValueError("Number of 'states' needs to be either 2 or 3")
+
         if graph:
-            d_genes = sp.sort(sp.unique(self.__data.gene.values))
+            d_genes = sp.sort(sp.unique(self._data.gene.values))
             g_genes = sp.sort(graph.nodes())
             if not sp.array_equal(d_genes, g_genes):
                 raise ValueError("Graph nodes != data genes")
-            self.__node_labels = d_genes
+            self._node_labels = d_genes
 
         self._set_data()
         self._set_link(link_function)
@@ -50,57 +53,65 @@ class HM(ABC):
     def __exit__(self, exc_type, exc_value, tb):
         pass
 
+    def sample(self, draws=1000, tune=1000, chains=None, seed=23):
+        with self.model:
+            logger.info("Sampling {}/{} times".format(draws, tune))
+            trace = pymc3.sample(
+              draws=draws, tune=tune, chains=chains, cores=1,
+              step=self._steps, random_seed=seed, progressbar=False)
+        return trace
+
     @property
     def n_states(self):
-        return self.__n_states
+        return self._n_states
 
     @property
     def model_type(self):
-        return self.__model_type
+        return self._model_type
 
     @property
     def data(self):
-        return self.__data
+        return self._data
 
     @property
     def graph(self):
-        return self.__graph
+        return self._graph
 
     @property
     def node_labels(self):
-        return self.__node_labels
+        return self._node_labels
 
     @property
     def family(self):
-        return self.__family
+        return self._family
 
     @property
     def link(self):
-        return self.__link_function
+        return self._link_function
 
     @property
     def sampler(self):
-        return self.__sampler
+        return self._sampler
 
     @property
     def n_genes(self):
-        return self.__len_genes
+        return self._len_genes
 
     @property
     def n_conditions(self):
-        return self.__len_conds
+        return self._len_conds
 
     @property
     def n_interventions(self):
-        return self.__len_intrs
+        return self._len_intrs
 
     @property
     def _intervention_data_idx(self):
-        return self.__intrs_data_idx
+        return self._intrs_data_idx
 
     @property
     def _gene_cond_data_idx(self):
-        return self.__gene_cond_data_idx
+        return self._gene_cond_data_idx
 
     @property
     def _beta_idx(self):
@@ -182,6 +193,14 @@ class HM(ABC):
     @property
     def n_gene_condition(self):
         return self.__len_gene_cond
+
+    @abc.abstractmethod
+    def _hlm(self, model, gamma):
+        pass
+
+    @abc.abstractmethod
+    def _gamma_mix(self, model, z):
+        pass
 
     def _set_data(self):
         data = self.__data

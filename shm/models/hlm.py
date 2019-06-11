@@ -35,24 +35,7 @@ class HLM(HM):
                          graph=graph,
                          sampler=sampler)
 
-    @property
-    def model(self):
-        return self.__model
-
-    @property
-    def _steps(self):
-        return self.__steps
-
-    def sample(self, draws=1000, tune=1000, chains=None, seed=23):
-        with self.model:
-            logger.info("Sampling {}/{} times".format(draws, tune))
-            trace = pm.sample(
-              draws=draws, tune=tune, chains=chains, cores=1,
-              step=self._steps, random_seed=seed, progressbar=False)
-        return trace
-
-    def __gamma_mix(self, model, z):
-        # TODO need to do that again. not good
+    def _gamma_mix(self, model, z):
         with model:
             tau_g = pm.InverseGamma(
               "tau_g", alpha=2., beta=1., shape=self.n_states)
@@ -74,16 +57,14 @@ class HLM(HM):
 
         return tau_g, mean_g, gamma
 
-    def __hlm(self, model, gamma):
+    def _hlm(self, model, gamma):
         with model:
-            # TODO:
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
 
-            # mu = self.data[AFFINITY].values * \
             mu = (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx]) + \
                  l[self._intervention_data_idx]
 
@@ -107,20 +88,9 @@ class HLM(HM):
                 z = BinaryMRF('z', G=self.graph)
             else:
                 z = CategoricalMRF('z', G=self.graph, k=3)
-        tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
-
-        with model:
-            self._discrete_step = RandomFieldGibbs([z])
-            if self.family == Family.gaussian:
-                self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
-            else:
-                self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
-
-        self.__steps = [self._discrete_step, self._continuous_step]
-        self.__model = model
+        tau_g, mean_g, gamma = self._gamma_mix(model, z)
+        param_hlm = self.__hlm(model, gamma)
+        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
         return self
 
     def _set_clustering_model(self):
@@ -143,6 +113,20 @@ class HLM(HM):
         self.__steps = [self._discrete_step, self._continuous_step]
         self.__model = model
         return self
+
+    def _set_steps(self, model, z, *params):
+        with model:
+            self._continuous_step = self.sampler(params)
+            if z is not None:
+                if hasattr(z.distribution, "name") and \
+                  z.distribution.name in [BinaryMRF.NAME, CategoricalMRF.NAME]:
+                    self._discrete_step = RandomFieldGibbs([z])
+                else:
+                    self._discrete_step = pm.CategoricalGibbsMetropolis([z])
+                self.__steps = [self._continuous_step, self._discrete_step]
+            else:
+                self.__steps = [self._continuous_step]
+        self.__model = model
 
     def _set_simple_model(self):
         with pm.Model() as model:

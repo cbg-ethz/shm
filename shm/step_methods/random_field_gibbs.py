@@ -2,8 +2,6 @@ import numpy as np
 import pymc3
 from pymc3.step_methods.arraystep import ArrayStep
 
-from shm.family import Family
-
 
 class RandomFieldGibbs(ArrayStep):
     name = 'random_field_gibbs'
@@ -26,4 +24,3 @@ class RandomFieldGibbs(ArrayStep):
         point['z'] = \
             self.__var.distribution.posterior_sample(z, gamma, mu_g, tau_g)
         return point
-

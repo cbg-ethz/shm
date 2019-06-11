@@ -3,13 +3,12 @@ import logging
 import numpy as np
 import pandas as pd
 import pymc3 as pm
-import theano.tensor as tt
 
 from shm.distributions.binary_mrf import BinaryMRF
 from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
-from shm.models.hlm import HLM
+from shm.models.shlm import SHLM
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-class CopynumberHLM(HLM):
+class CopynumberSHLM(SHLM):
     def __init__(self,
                  data: pd.DataFrame,
                  family="gaussian",
@@ -64,44 +63,3 @@ class CopynumberHLM(HLM):
                 raise NotImplementedError("Only gaussian family so far")
 
         return tau_b, beta, l_tau, l, sd, c
-
-    def _set_mrf_model(self):
-        with pm.Model() as model:
-            z = BinaryMRF('z', G=self.graph)
-        tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        param_hlm = self.__hlm(model, gamma)
-        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
-        return self
-
-    def _set_clustering_model(self):
-        with pm.Model() as model:
-            p = pm.Dirichlet("p", a=np.array([1., 1.]), shape=2)
-            pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
-            z = pm.Categorical("z", p=p, shape=self.n_genes)
-        tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        param_hlm = self.__hlm(model, gamma)
-        self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
-        return self
-
-    def _set_steps(self, model, z, *params):
-        with model:
-            self._continuous_step = self.sampler(params)
-            if z is not None:
-                if hasattr(z.distribution, "name") and \
-                  z.distribution.name == BinaryMRF.NAME:
-                    self._discrete_step = RandomFieldGibbs([z])
-                else:
-                    self._discrete_step = pm.CategoricalGibbsMetropolis([z])
-                self.__steps = [self._continuous_step, self._discrete_step]
-            else:
-                self.__steps = [self._continuous_step]
-        self.__model = model
-
-    def _set_simple_model(self):
-        with pm.Model() as model:
-            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
-            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
-        param_hlm = self.__hlm(model, gamma)
-        self._set_steps(model, None, tau_g, mean_g, gamma, *param_hlm)
-        return self

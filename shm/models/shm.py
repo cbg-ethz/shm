@@ -3,15 +3,19 @@ import logging
 from abc import ABC
 
 import pandas as pd
-import pymc3
+import pymc3 as pm
 import scipy as sp
 from sklearn.preprocessing import LabelEncoder
+import theano.tensor as tt
 
+from shm.distributions.binary_mrf import BinaryMRF
+from shm.distributions.categorical_mrf import CategoricalMRF
 from shm.family import Family
 from shm.globals import INTERVENTION, GENE, CONDITION
 from shm.link import Link
 from shm.model import Model
 from shm.sampler import Sampler
+from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -56,10 +60,18 @@ class SHM(ABC):
     def sample(self, draws=1000, tune=1000, chains=None, seed=23):
         with self.model:
             logger.info("Sampling {}/{} times".format(draws, tune))
-            trace = pymc3.sample(
+            trace = pm.sample(
               draws=draws, tune=tune, chains=chains, cores=1,
               step=self._steps, random_seed=seed, progressbar=False)
         return trace
+
+    @property
+    def model(self):
+        return self._model
+
+    @property
+    def _steps(self):
+        return self._steps
 
     @property
     def n_states(self):
@@ -95,76 +107,23 @@ class SHM(ABC):
 
     @property
     def n_genes(self):
-        return self._len_genes
+        return self.__len_genes
 
     @property
     def n_conditions(self):
-        return self._len_conds
+        return self.__len_conds
 
     @property
     def n_interventions(self):
-        return self._len_intrs
+        return self.__len_intrs
 
     @property
     def _intervention_data_idx(self):
-        return self._intrs_data_idx
+        return self.__intrs_data_idx
 
     @property
     def _gene_cond_data_idx(self):
-        return self._gene_cond_data_idx
-
-    @property
-    def _beta_idx(self):
-        return self.__beta_idx
-
-    @abc.abstractmethod
-    def sample(self, n_draw=1000, n_tune=1000, seed=23):
-        pass
-
-    def _set_link(self, link_function):
-        if isinstance(link_function, str):
-            link_function = Link.from_str(link_function)
-        self.__link_function = link_function
-
-    def _set_sampler(self, sampler):
-        if isinstance(sampler, str):
-            sampler = Sampler.from_str(sampler)
-        self.__sampler = sampler.value
-
-    def _set_family(self, family):
-        if isinstance(family, str):
-            family = Family.from_str(family)
-        self.__family = family
-
-    def _set_model(self, model):
-        if isinstance(model, str):
-            model = Model.from_str(model)
-        self.__model_type = model
-        if model == Model.mrf:
-            logger.info("Building mrf hierarchical model")
-            if not self.__graph:
-                raise ValueError("You need to provide a graph")
-            self._set_mrf_model()
-        elif model == Model.clustering:
-            logger.info("Building cluster hierarchical model")
-            self._set_clustering_model()
-        elif model == Model.simple:
-            logger.info("Building simple hierarchical model")
-            self._set_simple_model()
-        else:
-            raise ValueError("Model not supported")
-
-    @abc.abstractmethod
-    def _set_simple_model(self):
-        pass
-
-    @abc.abstractmethod
-    def _set_clustering_model(self):
-        pass
-
-    @abc.abstractmethod
-    def _set_mrf_model(self):
-        pass
+        return self.__gene_cond_data_idx
 
     @property
     def _index_to_gene(self):
@@ -194,17 +153,98 @@ class SHM(ABC):
     def n_gene_condition(self):
         return self.__len_gene_cond
 
+    @property
+    def _beta_idx(self):
+        return self.__beta_idx
+
+    def _set_link(self, link_function):
+        if isinstance(link_function, str):
+            link_function = Link.from_str(link_function)
+        self._link_function = link_function
+
+    def _set_sampler(self, sampler):
+        if isinstance(sampler, str):
+            sampler = Sampler.from_str(sampler)
+        self._sampler = sampler.value
+
+    def _set_family(self, family):
+        if isinstance(family, str):
+            family = Family.from_str(family)
+        self._family = family
+
+    def _set_model(self, model):
+        if isinstance(model, str):
+            model = Model.from_str(model)
+        self._model_type = model
+        if model == Model.mrf:
+            logger.info("Building mrf hierarchical model")
+            if not self._graph:
+                raise ValueError("You need to provide a graph")
+            self._set_mrf_model()
+        elif model == Model.clustering:
+            logger.info("Building cluster hierarchical model")
+            self._set_clustering_model()
+        elif model == Model.simple:
+            logger.info("Building simple hierarchical model")
+            self._set_simple_model()
+        else:
+            raise ValueError("Model not supported")
+
+    def _set_steps(self, model, z, *params):
+        with model:
+            self._continuous_step = self.sampler(params)
+            if z is not None:
+                if hasattr(z.distribution, "name") and \
+                  z.distribution.name in [BinaryMRF.NAME, CategoricalMRF.NAME]:
+                    self._discrete_step = RandomFieldGibbs([z])
+                else:
+                    self._discrete_step = pm.CategoricalGibbsMetropolis([z])
+                self._steps = [self._continuous_step, self._discrete_step]
+            else:
+                self._steps = [self._continuous_step]
+        self._model = model
+
+    @abc.abstractmethod
+    def _set_simple_model(self):
+        pass
+
+    @abc.abstractmethod
+    def _set_clustering_model(self):
+        pass
+
+    @abc.abstractmethod
+    def _set_mrf_model(self):
+        pass
+
     @abc.abstractmethod
     def _hlm(self, model, gamma):
         pass
 
-    @abc.abstractmethod
     def _gamma_mix(self, model, z):
-        pass
+        with model:
+            tau_g = pm.InverseGamma(
+              "tau_g", alpha=2., beta=1., shape=self.n_states)
+            if self.n_states == 2:
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1., 0]), sd=1, shape=2)
+                pm.Potential(
+                  "m_opot",
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
+            else:
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1, 0., 1]), sd=1, shape=3)
+                pm.Potential(
+                  'm_opot',
+                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
+                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
+
+            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
+
+        return tau_g, mean_g, gamma
 
     def _set_data(self):
-        data = self.__data
-        self.__n, _ = data.shape
+        data = self._data
+        self._n, _ = data.shape
         le = LabelEncoder()
 
         self.__gene_data_idx = le.fit_transform(data[GENE].values)

@@ -10,15 +10,14 @@ from shm.distributions.categorical_mrf import CategoricalMRF
 from shm.family import Family
 from shm.globals import READOUT
 from shm.link import Link
-from shm.models.hm import HM
-from shm.step_methods.random_field_gibbs import RandomFieldGibbs
+from shm.models.shm import SHM
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-class SHLM(HM):
+class SHLM(SHM):
     def __init__(self,
                  data: pd.DataFrame,
                  family="gaussian",
@@ -35,27 +34,38 @@ class SHLM(HM):
                          graph=graph,
                          sampler=sampler)
 
-    def _gamma_mix(self, model, z):
-        with model:
-            tau_g = pm.InverseGamma(
-              "tau_g", alpha=2., beta=1., shape=self.n_states)
+    def _set_mrf_model(self):
+        with pm.Model() as model:
             if self.n_states == 2:
-                mean_g = pm.Normal(
-                  "mu_g", mu=np.array([-1., 0]), sd=1, shape=2)
-                pm.Potential(
-                  "m_opot",
-                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
+                z = BinaryMRF('z', G=self.graph)
             else:
-                mean_g = pm.Normal(
-                  "mu_g", mu=np.array([-1, 0., 1]), sd=1, shape=3)
-                pm.Potential(
-                  'm_opot',
-                  tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0)
-                  + tt.switch(mean_g[2] - mean_g[1] < 0, -np.inf, 0))
+                z = CategoricalMRF('z', G=self.graph, k=3)
+        tau_g, mean_g, gamma = self._gamma_mix(model, z)
+        param_hlm = self._hlm(model, gamma)
 
-            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
+        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
+        return self
 
-        return tau_g, mean_g, gamma
+    def _set_clustering_model(self):
+        with pm.Model() as model:
+            p = pm.Dirichlet("p", a=np.array([1., 1.]), shape=2)
+            pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
+            z = pm.Categorical("z", p=p, shape=self.n_genes)
+        tau_g, mean_g, gamma = self._gamma_mix(model, z)
+        param_hlm = self._hlm(model, gamma)
+
+        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
+        return self
+
+    def _set_simple_model(self):
+        with pm.Model() as model:
+            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
+            mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
+            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
+        param_hlm = self.__hlm(model, gamma)
+
+        self._set_steps(model, None, tau_g, mean_g, gamma, *param_hlm)
+        return self
 
     def _hlm(self, model, gamma):
         with model:
@@ -75,74 +85,6 @@ class SHLM(HM):
                           sd=sd,
                           observed=np.squeeze(self.data[READOUT].values))
             else:
-                sd = None
-                pm.Poisson("x",
-                           mu=self.link(mu),
-                           observed=np.squeeze(self.data[READOUT].values))
+                raise NotImplementedError("Only gaussian family so far")
 
         return tau_b, beta, l_tau, l, sd
-
-    def _set_mrf_model(self):
-        with pm.Model() as model:
-            if self.n_states == 2:
-                z = BinaryMRF('z', G=self.graph)
-            else:
-                z = CategoricalMRF('z', G=self.graph, k=3)
-        tau_g, mean_g, gamma = self._gamma_mix(model, z)
-        param_hlm = self.__hlm(model, gamma)
-        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
-        return self
-
-    def _set_clustering_model(self):
-        with pm.Model() as model:
-            p = pm.Dirichlet("p", a=np.array([1., 1.]), shape=2)
-            pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
-            z = pm.Categorical("z", p=p, shape=self.n_genes)
-        tau_g, mean_g, gamma = self.__gamma_mix(model, z)
-        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
-
-        with model:
-            self._discrete_step = pm.CategoricalGibbsMetropolis([z])
-            if self.family == Family.gaussian:
-                self._continuous_step = self.sampler([
-                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
-            else:
-                self._continuous_step = self.sampler([
-                    p, tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
-
-        self.__steps = [self._discrete_step, self._continuous_step]
-        self.__model = model
-        return self
-
-    def _set_steps(self, model, z, *params):
-        with model:
-            self._continuous_step = self.sampler(params)
-            if z is not None:
-                if hasattr(z.distribution, "name") and \
-                  z.distribution.name in [BinaryMRF.NAME, CategoricalMRF.NAME]:
-                    self._discrete_step = RandomFieldGibbs([z])
-                else:
-                    self._discrete_step = pm.CategoricalGibbsMetropolis([z])
-                self.__steps = [self._continuous_step, self._discrete_step]
-            else:
-                self.__steps = [self._continuous_step]
-        self.__model = model
-
-    def _set_simple_model(self):
-        with pm.Model() as model:
-            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
-            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
-
-        tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
-        with model:
-            if self.family == Family.gaussian:
-                self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l, sd])
-            else:
-                self._continuous_step = self.sampler([
-                    tau_g, mean_g, gamma, tau_b, beta, l_tau, l])
-
-        self.__steps = [self._continuous_step]
-        self.__model = model
-        return self

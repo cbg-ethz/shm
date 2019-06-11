@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-class HLM(HM):
+class SHLM(HM):
     def __init__(self,
                  data: pd.DataFrame,
                  family="gaussian",

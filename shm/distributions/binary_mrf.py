@@ -29,28 +29,6 @@ class BinaryMRF(CategoricalMRF):
     def name(self):
         return BinaryMRF.NAME
 
-    @property
-    def n_nodes(self):
-        return self.__n
-
-    def logp(self, value):
-        return 0
-
-    def random(self, point=None):
-        next_point = numpy.zeros(self.n_nodes)
-        for idx in range(self.node_labels):
-            next_point[idx] = self._gibbs(idx, point)
-        self.__point = next_point
-        return next_point
-
-    def posterior_sample(self, z, gamma, mu, tau):
-        node_potentials = self._log_node_potentials(gamma, mu, tau)
-        next_point = numpy.zeros(self.n_nodes)
-        for idx in range(self.n_nodes):
-            next_point[idx] = self._gibbs(idx, z, node_potentials)
-        self.__point = next_point.astype(numpy.int64)
-        return self.__point
-
     def _log_node_potentials(self, gamma, mu, tau):
         loglik = self._loglik(gamma, mu, tau)
         return loglik[:, ESSENTIAL] - loglik[:, NON_ESSENTIAL]
@@ -60,11 +38,6 @@ class BinaryMRF(CategoricalMRF):
         edge_pot = self._log_edge_potential(point, idx)
         p = scipy.special.expit(edge_pot + node_pot)
         return self.__choice(p)
-
-    def _log_node_potential(self, node_potentials, idx):
-        if node_potentials is None:
-            return 0
-        return node_potentials[idx]
 
     def _log_edge_potential(self, point, idx):
         """Parameterization of edge potentials can be taken either from

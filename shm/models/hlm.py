@@ -5,9 +5,10 @@ import pandas as pd
 import pymc3 as pm
 import theano.tensor as tt
 
-from shm.distributions.BinaryMRF import BinaryMRF
+from shm.distributions.binary_mrf import BinaryMRF
+from shm.distributions.categorical_mrf import CategoricalMRF
 from shm.family import Family
-from shm.globals import READOUT, AFFINITY
+from shm.globals import READOUT
 from shm.link import Link
 from shm.models.hm import HM
 from shm.step_methods.random_field_gibbs import RandomFieldGibbs
@@ -23,12 +24,14 @@ class HLM(HM):
                  family="gaussian",
                  link_function=Link.identity,
                  model="simple",
+                 n_states=2,
                  graph=None,
                  sampler="metropolis"):
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
                          model=model,
+                         n_states=n_states,
                          graph=graph,
                          sampler=sampler)
 
@@ -49,24 +52,38 @@ class HLM(HM):
         return trace
 
     def __gamma_mix(self, model, z):
+        # TODO need to do that again. not good
         with model:
-            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=2)
-            mean_g = pm.Normal("mu_g", mu=np.array([0., -1.]), sd=1, shape=2)
-            pm.Potential(
-              "m_opot", var=tt.switch(mean_g[1] - mean_g[0] > 0., -np.inf, 0.))
+            tau_g = pm.InverseGamma(
+              "tau_g", alpha=2., beta=1., shape=self.n_states)
+            if self.n_states == 2:
+                mean_g = pm.Normal(
+                  "mu_g", mu=np.array([-1., 0]), sd=1, shape=2)
+                pm.Potential(
+                  "m_opot",
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
+            else:
+                mean_g = pm.Normal(
+                  "mu_g", mu=np.array([-1, 0., 1]), sd=1, shape=3)
+                pm.Potential(
+                  'm_opot',
+                  tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0)
+                  + tt.switch(mean_g[2] - mean_g[1] < 0, -np.inf, 0))
+
             gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
 
         return tau_g, mean_g, gamma
 
     def __hlm(self, model, gamma):
         with model:
+            # TODO:
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
             l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
 
-            #mu = self.data[AFFINITY].values * \
+            # mu = self.data[AFFINITY].values * \
             mu = (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx]) + \
                  l[self._intervention_data_idx]
 
@@ -86,7 +103,10 @@ class HLM(HM):
 
     def _set_mrf_model(self):
         with pm.Model() as model:
-            z = BinaryMRF('z', G=self.graph)
+            if self.n_states == 2:
+                z = BinaryMRF('z', G=self.graph)
+            else:
+                z = CategoricalMRF('z', G=self.graph, k=3)
         tau_g, mean_g, gamma = self.__gamma_mix(model, z)
         tau_b, beta, l_tau, l, sd = self.__hlm(model, gamma)
 

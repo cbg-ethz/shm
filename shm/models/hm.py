@@ -23,10 +23,14 @@ class HM(ABC):
                  family=Family.gaussian,
                  link_function=Link.identity,
                  model=Model.simple,
+                 n_states=2,
                  graph=None,
                  sampler=Sampler.metropolis):
         self.__data = data
         self.__graph = graph
+        self.__n_states = n_states
+        if self.__n_states not in [2, 3]:
+            raise ValueError("Number of 'states' needs to be either 2 or 3")
         if graph:
             d_genes = sp.sort(sp.unique(self.__data.gene.values))
             g_genes = sp.sort(graph.nodes())
@@ -45,6 +49,10 @@ class HM(ABC):
 
     def __exit__(self, exc_type, exc_value, tb):
         pass
+
+    @property
+    def n_states(self):
+        return self.__n_states
 
     @property
     def model_type(self):

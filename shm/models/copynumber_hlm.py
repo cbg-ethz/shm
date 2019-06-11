@@ -5,7 +5,7 @@ import pandas as pd
 import pymc3 as pm
 import theano.tensor as tt
 
-from shm.distributions.BinaryMRF import BinaryMRF
+from shm.distributions.binary_mrf import BinaryMRF
 from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
@@ -23,6 +23,7 @@ class CopynumberHLM(HLM):
                  family="gaussian",
                  link_function=Link.identity,
                  model="simple",
+                 n_states=2,
                  graph=None,
                  sampler="metropolis",
                  use_affinity=False):
@@ -31,6 +32,7 @@ class CopynumberHLM(HLM):
                          family=family,
                          link_function=link_function,
                          model=model,
+                         n_states=n_states,
                          graph=graph,
                          sampler=sampler)
 

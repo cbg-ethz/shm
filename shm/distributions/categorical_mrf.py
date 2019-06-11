@@ -56,7 +56,7 @@ class CategoricalMRF(Discrete):
     def _gibbs(self, idx, point, node_potentials=None):
         node_pot = self._log_node_potential(node_potentials, idx)
         edge_pot = self._log_edge_potential(point, idx)
-        # TODO
+        # TODO: is that correct ?
         potentials = edge_pot + node_pot
         probabilities = potentials / numpy.sum(potentials)
         return self.__choice(self.__classes, p=probabilities)
@@ -74,9 +74,11 @@ class CategoricalMRF(Discrete):
         mb = self._markov_blank(idx)
         point_label, blanket_labs = point[idx], point[mb]
         mb_weights = self.__adj[mb, idx]
-        s1 = numpy.sum((blanket_labs == ESSENTIAL) * mb_weights)
-        s2 = numpy.sum((blanket_labs != ESSENTIAL) * mb_weights)
-        return s1 - s2
+        potentials = [
+            numpy.sum((blanket_labs == i) * mb_weights)
+            for i in self.__classes
+        ]
+        return potentials
 
     def _markov_blank(self, idx):
         if idx in self.__blanket:

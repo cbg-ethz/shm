@@ -19,6 +19,7 @@ class RandomFieldGibbs(ArrayStep):
         super(RandomFieldGibbs, self).__init__(vars, [model.fastlogp])
 
     def step(self, point):
+        # TODO nth to do here
         z = point['z']
         mu_g = point['mu_g']
         tau_g = np.exp(point['tau_g_log__'])

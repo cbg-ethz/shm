@@ -4,12 +4,10 @@ import numpy as np
 import pandas as pd
 import pymc3 as pm
 
-from shm.distributions.binary_mrf import BinaryMRF
 from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
 from shm.models.shlm import SHLM
-from shm.step_methods.random_field_gibbs import RandomFieldGibbs
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -68,14 +68,11 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
         pickle.dump(data, out)
 
 
-def _build_data(idx, count_table, with_interventions, l, o, G,
+def _build_data(size, idx, count_table, l, o, G,
                 genes, gamma_essential, gamma_nonessential, gamma, beta):
     count_table = count_table.copy()
     polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:idx * n_replicates]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
-    if not with_interventions:
-        l[:] = 0
-        o[:] = 1
 
     count_table["affinity"] = o[count_table["intervention"]]
     count_table["affinity"][polr1b_idx] = .1
@@ -89,11 +86,12 @@ def _build_data(idx, count_table, with_interventions, l, o, G,
 
     count_table["intervention"] = \
         ["S" + str(i) for i in count_table["intervention"]]
+
     write_file(G, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, count_table, "{}_modified_grnas".format(idx))
+               gamma, beta, l, count_table, "{}-{}_modified_grnas".format(size, idx))
 
 
-def build_data(G, essential_genes, nonessential_genes, with_interventions):
+def build_data(G, essential_genes, nonessential_genes, size):
     genes = np.append(essential_genes, nonessential_genes)
     n_genes = len(genes)
     n_essential = len(essential_genes)
@@ -130,33 +128,33 @@ def build_data(G, essential_genes, nonessential_genes, with_interventions):
     o = st.uniform.rvs(0, 1, size=n_conditions * n_genes * n_sgrnas)
 
     for idx in [2, 5, 7, 10]:
-        _build_data(idx, count_table, with_interventions, l, o, G,
+        if size == "small" and idx > 2:
+            continue
+        _build_data(size, idx, count_table, l, o, G,
                     genes, gamma_essential, gamma_nonessential, gamma, beta)
 
 
 @click.command()
-@click.argument('size', type=click.Choice(["small", "large"]))
-@click.option("--with-interventions", is_flag=True)
-def run(size, with_interventions):
-    essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
-                              "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
+def run():
+    for size in ["small", "large"]:
+        essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
+                                  "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
 
-    G = read_graph("../data_raw/simulated_binary-full_graph.pickle")
-    nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
-    np.random.seed(23)
-    nonessential_genes = list(np.random.choice(nonessential_genes, 21))
-    G = G.subgraph(essential_genes + nonessential_genes)
-    G = G.copy()
+        G = read_graph("../data_raw/simulated_binary-full_graph.pickle")
+        nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
+        np.random.seed(23)
+        nonessential_genes = list(np.random.choice(nonessential_genes, 21))
+        G = G.subgraph(essential_genes + nonessential_genes)
+        G = G.copy()
 
-    if size == "small":
-        essential_genes = np.array(["POLR1B"])
-        nonessential_genes = np.array(["PSMB1"])
-        G.add_edge('PSMB1', 'POLR1B')
-    filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
-    G = G.subgraph(np.sort(filter_genes))
+        if size == "small":
+            essential_genes = np.array(["POLR1B"])
+            nonessential_genes = np.array(["PSMB1"])
+            G.add_edge('PSMB1', 'POLR1B')
+        filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
+        G = G.subgraph(np.sort(filter_genes))
 
-    build_data(G, essential_genes, nonessential_genes,
-               with_interventions=with_interventions)
+        build_data(G, essential_genes, nonessential_genes, size)
 
 
 if __name__ == "__main__":

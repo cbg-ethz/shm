@@ -4,17 +4,16 @@ import os
 import pickle
 
 import click
-import networkx
 import numpy as np
 import pandas as pd
 import scipy as sp
 import scipy.stats as st
 
-outpath = os.path.join("..", "data_raw")
+outpath = os.path.join("..", "..", "data_raw")
 
 gamma_tau = .25
 beta_tau = .25
-l_tau = .25
+l_tau = .1
 data_tau = .25
 gamma_tau_non_essential = .25
 n_conditions, n_sgrnas, n_replicates = 2, 5, 5
@@ -125,7 +124,7 @@ def build_data(G, essential_genes, nonessential_genes, size):
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
-    o = st.uniform.rvs(0, 1, size=n_conditions * n_genes * n_sgrnas)
+    o = st.uniform.rvs(0, .25, size=n_conditions * n_genes * n_sgrnas) + 0.75
 
     for idx in [2, 5, 7, 10]:
         if size == "small" and idx > 2:
@@ -140,7 +139,7 @@ def run():
         essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
                                   "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
 
-        G = read_graph("../data_raw/simulated_binary-full_graph.pickle")
+        G = read_graph("../../data_raw/simulated_binary-full_graph.pickle")
         nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
         np.random.seed(23)
         nonessential_genes = list(np.random.choice(nonessential_genes, 21))

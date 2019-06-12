@@ -50,7 +50,7 @@ data.table::fwrite(
 
 ################################################################################
 
-graph <- igraph::induced_subgraph(graph, c(3, 11))
+graph <- igraph::induced_subgraph(graph, c(3, 11, 20))
 dt <- dt[which(dt$gene %in% V(graph)$name), ]
 
 assertthat::assert_that(all(unique(dt$gene) %in% V(graph)$name))

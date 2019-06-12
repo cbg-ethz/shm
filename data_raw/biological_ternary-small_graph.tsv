@@ -1,2 +1,4 @@
 from	to	weight
 PSMC4	PSMA3	1
+PSMC4	PSMA2	1
+PSMA3	PSMA2	1

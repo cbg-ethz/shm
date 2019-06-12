@@ -25,34 +25,44 @@ def read_graph(infile):
     return G
 
 
-def get_gamma(n_essential, n_nonessential,
+def get_gamma(n_n_essential, n_p_essential, n_nonessential,
               gamma_tau, gamma_tau_non_essential):
     np.random.seed(1)
-    gamma_essential = sp.random.normal(-1, scale=gamma_tau, size=n_essential)
-    gamma_nonessential = sp.random.normal(0, scale=gamma_tau_non_essential,
-                                          size=n_nonessential)
-    gamma = sp.append(gamma_essential, gamma_nonessential)
-    return gamma, gamma_essential, gamma_nonessential
+    gamma_p_essential = sp.random.normal(
+      -1, scale=gamma_tau, size=n_p_essential)
+    gamma_n_essential = sp.random.normal(
+      1, scale=gamma_tau, size=n_n_essential)
+    gamma_nonessential = sp.random.normal(
+      0, scale=gamma_tau_non_essential, size=n_nonessential)
+    gamma = sp.append(sp.append(gamma_p_essential, gamma_n_essential),
+                      gamma_nonessential)
+    return gamma, gamma_p_essential, gamma_n_essential, gamma_nonessential
 
 
-def write_file(G, genes, gamma_essential, gamma_nonessential,
+def write_file(G, genes, p_essential_genes, n_essential_genes,
+               nonessential_genes,
+               gamma_p_essential, gamma_n_essential, gamma_nonessential,
                gamma, beta, l, count_table, suffix):
     count_table.to_csv(
-      os.path.join(outpath, "simulated_binary-{}-simulated_data.tsv".format(suffix)),
+      os.path.join(outpath,
+                   "simulated_ternary-{}-simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
 
     with open(
-      os.path.join(outpath, "simulated_binary-{}-graph.pickle".format(suffix)), "wb") as out:
+      os.path.join(outpath, "simulated_ternary-{}-graph.pickle".format(suffix)),
+      "wb") as out:
         pickle.dump(G.subgraph(genes), out)
 
     data = {
         "graph": G.subgraph(genes),
         "genes": genes,
-        "essential_genes": genes[:len(gamma_essential)],
-        "nonessential_genes": genes[len(gamma_essential):],
+        "p_essential_genes": p_essential_genes,
+        "n_essential_genes": n_essential_genes,
+        "nonessential_genes": nonessential_genes,
         "gamma_tau": gamma_tau,
         "gamma_tau_non_essential": gamma_tau_non_essential,
-        "gamma_essential": gamma_essential,
+        "gamma_p_essential": gamma_p_essential,
+        "gamma_n_essential": gamma_n_essential,
         "gamma_nonessential": gamma_nonessential,
         "gamma": gamma,
         "beta_tau": beta_tau,
@@ -62,15 +72,18 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
         "data_tau": data_tau,
         "count_table": count_table
     }
-    picklepath = os.path.join(outpath, "simulated_binary-{}-data.pickle".format(suffix))
+    picklepath = os.path.join(outpath,
+                              "simulated_ternary-{}-data.pickle".format(suffix))
     with open(picklepath, "wb") as out:
         pickle.dump(data, out)
 
 
 def _build_data(size, idx, count_table, l, o, G,
-                genes, gamma_essential, gamma_nonessential, gamma, beta):
+                genes, p_essential_genes, n_essential_genes, nonessential_genes,
+                gamma_p_essential, gamma_n_essential, gamma_nonessential, gamma, beta):
     count_table = count_table.copy()
-    polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:idx * n_replicates]
+    polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][
+                 :idx * n_replicates]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
 
     count_table["affinity"] = o[count_table["intervention"]]
@@ -86,17 +99,20 @@ def _build_data(size, idx, count_table, l, o, G,
     count_table["intervention"] = \
         ["S" + str(i) for i in count_table["intervention"]]
 
-    write_file(G, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, count_table, "{}-{}_modified_grnas".format(size, idx))
+    write_file(G, genes, p_essential_genes, n_essential_genes,
+               nonessential_genes,
+               gamma_p_essential, gamma_n_essential, gamma_nonessential,
+               gamma, beta, l, count_table,
+               "{}-{}_modified_grnas".format(size, idx))
 
 
-def build_data(G, essential_genes, nonessential_genes, size):
-    genes = np.append(essential_genes, nonessential_genes)
+def build_data(G, genes, p_essential_genes, n_essential_genes, nonessential_genes, size):
     n_genes = len(genes)
-    n_essential = len(essential_genes)
+    n_p_essential = len(p_essential_genes)
+    n_n_essential = len(n_essential_genes)
     n_nonessential = len(nonessential_genes)
-    gamma, gamma_essential, gamma_nonessential = get_gamma(
-      n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential)
+    gamma, gamma_p_essential, gamma_n_essential, gamma_nonessential = get_gamma(
+      n_p_essential, n_n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential)
     gamma_dict = {ge: ga for ga, ge in zip(gamma, genes)}
 
     conditions = ["C" + str(i) for i in range(n_conditions)]
@@ -130,19 +146,25 @@ def build_data(G, essential_genes, nonessential_genes, size):
         if size == "small" and idx > 2:
             continue
         _build_data(size, idx, count_table, l, o, G,
-                    genes, gamma_essential, gamma_nonessential, gamma, beta)
+                    genes, p_essential_genes, n_essential_genes,
+                    nonessential_genes,
+                    gamma_p_essential, gamma_n_essential, gamma_nonessential, gamma, beta)
 
 
 @click.command()
 def run():
     for size in ["small", "large"]:
-        essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
-                                  "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
+        p_essential_genes = sorted(
+          ["PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
+
+        n_essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K'])
+        essential_genes = p_essential_genes + n_essential_genes
 
         G = read_graph("../../data_raw/simulated_binary-full_graph.pickle")
         nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
         np.random.seed(23)
         nonessential_genes = list(np.random.choice(nonessential_genes, 21))
+
         G = G.subgraph(essential_genes + nonessential_genes)
         G = G.copy()
 
@@ -151,10 +173,14 @@ def run():
             n_essential_genes = np.array(["POLR2D"])
             nonessential_genes = np.array(["PSMB1"])
             G.add_edge('PSMB1', 'POLR1B')
-        filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
-        G = G.subgraph(np.sort(filter_genes))
+            G.add_edge('PSMB1', 'POLR2D')
+        genes = np.append(np.append(p_essential_genes, n_essential_genes),
+                    nonessential_genes)
+        G = G.subgraph(np.sort(genes))
+        G = G.copy()
 
-        build_data(G, essential_genes, nonessential_genes, size)
+        build_data(G, genes, p_essential_genes, n_essential_genes,
+                   nonessential_genes, size)
 
 
 if __name__ == "__main__":

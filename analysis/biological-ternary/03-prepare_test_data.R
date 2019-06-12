@@ -43,10 +43,10 @@ assertthat::assert_that(all(V(graph)$name %in% unique(dt$gene)))
 ################################################################################
 data.table::fwrite(
   dt,
-  "../../data_raw/biological_binary-data.tsv", sep="\t")
+  "../shm/data_raw/biological_ternary-data.tsv", sep="\t")
 data.table::fwrite(
   cbind(as_data_frame(graph)[, c(1, 2)], weight=1),
-  "../../data_raw/biological_binary-graph.tsv", sep="\t")
+  "../shm/data_raw/biological_ternary-graph.tsv", sep="\t")
 
 ################################################################################
 
@@ -58,8 +58,8 @@ assertthat::assert_that(all(V(graph)$name %in% unique(dt$gene)))
 
 data.table::fwrite(
   dt,
-  "../../data_raw/biological_binary-small_data.tsv", sep="\t")
+  "../shm/data_raw/biological_ternary-small_data.tsv", sep="\t")
 data.table::fwrite(
   cbind(as_data_frame(graph)[, c(1, 2)], weight=1),
-  "../../data_raw/biological_binary-small_graph.tsv", sep="\t")
+  "../shm/data_raw/biological_ternary-small_graph.tsv", sep="\t")
 

@@ -150,7 +150,7 @@ def run():
             essential_genes = np.array(["POLR1B"])
             nonessential_genes = np.array(["PSMB1"])
             G.add_edge('PSMB1', 'POLR1B')
-        filter_genes = np.sort(np.append(essential_genes, nonessential_genes))
+        filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
 
         build_data(G, essential_genes, nonessential_genes, size)

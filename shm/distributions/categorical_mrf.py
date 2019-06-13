@@ -62,7 +62,8 @@ class CategoricalMRF(Discrete):
         # we need to pow this iback otherwise probs are on log-scale
         potentials = scipy.power(2, edge_pot + node_pot)
         probabilities = potentials / numpy.sum(potentials)
-        return self.__choice(self.__classes, p=probabilities)
+        k = self.__choice(self.__classes, p=probabilities)
+        return k
 
     def _log_node_potential(self, node_potentials, idx):
         if node_potentials is None:
@@ -81,7 +82,7 @@ class CategoricalMRF(Discrete):
             numpy.sum((blanket_labs == i) * mb_weights)
             for i in self.__classes
         ]
-        return scipy.column_stack(potentials)
+        return potentials
 
     def _markov_blank(self, idx):
         if idx in self.__blanket:

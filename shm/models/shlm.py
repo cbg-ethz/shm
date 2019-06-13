@@ -62,7 +62,7 @@ class SHLM(SHM):
             tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
             mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
             gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
-        param_hlm = self.__hlm(model, gamma)
+        param_hlm = self._hlm(model, gamma)
 
         self._set_steps(model, None, tau_g, mean_g, gamma, *param_hlm)
         return self

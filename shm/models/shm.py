@@ -70,7 +70,7 @@ class SHM(ABC):
         return self._model
 
     @property
-    def _steps(self):
+    def steps(self):
         return self._steps
 
     @property
@@ -226,13 +226,13 @@ class SHM(ABC):
               "tau_g", alpha=2., beta=1., shape=self.n_states)
             if self.n_states == 2:
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1., 0]), sd=1, shape=2)
+                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=2)
                 pm.Potential(
                   "m_opot",
                   var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
             else:
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1, 0., 1]), sd=1, shape=3)
+                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=3)
                 pm.Potential(
                   'm_opot',
                   tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)

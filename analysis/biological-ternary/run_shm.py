@@ -14,7 +14,7 @@ from shm.family import Family
 from shm.globals import READOUT, INTERVENTION, CONDITION, GENE, REPLICATE, \
     COPYNUMBER, AFFINITY
 from shm.link import Link
-from shm.models.copynumber_hlm import CopynumberHLM
+from shm.models.copynumber_shlm import CopynumberSHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")
@@ -33,7 +33,7 @@ def _load_data(infile, family):
     for c in cols:
         if c not in dat.columns:
             raise ValueError(
-                "Check your column names. Should have: {}".format(c))
+              "Check your column names. Should have: {}".format(c))
     return dat
 
 
@@ -48,15 +48,10 @@ def _read_graph(infile, data):
     return G, data
 
 
-@click.group()
-def cli():
-    pass
-
-
-@cli.command()
+@click.command()
 @click.argument("data_file", type=str)
-@click.argument("outfile", type=str)
 @click.argument("graph", type=str)
+@click.argument("outfile", type=str)
 @click.option('--family',
               type=click.Choice(["gaussian", "poisson"]),
               default="gaussian")
@@ -72,13 +67,14 @@ def sample(data_file, outfile, graph, family, model, ntune, ndraw, nchain):
     family = Family.gaussian if family == "gaussian" else Family.poisson
     graph, read_counts = _read_graph(graph, read_counts)
 
-    with CopynumberHLM(data=read_counts,
-                       family=family,
-                       link_function=link_function,
-                       model=model,
-                       sampler="nuts",
-                       graph=graph,
-                       use_affinity=True) as model:
+    with CopynumberSHLM(data=read_counts,
+                        family=family,
+                        link_function=link_function,
+                        model=model,
+                        sampler="nuts",
+                        graph=graph,
+                        n_states=3,
+                        use_affinity=True) as model:
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 
@@ -86,4 +82,4 @@ def sample(data_file, outfile, graph, family, model, ntune, ndraw, nchain):
 
 
 if __name__ == "__main__":
-    cli()
+    sample()

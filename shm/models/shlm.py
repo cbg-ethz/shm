@@ -62,8 +62,10 @@ class SHLM(SHM):
     def _set_mrf_model(self):
         with pm.Model() as model:
             if self.n_states == 2:
+                logger.info("Using binary MRF")
                 z = BinaryMRF('z', G=self.graph)
             else:
+                logger.info("Using categorical MRF with three states")
                 z = CategoricalMRF('z', G=self.graph, k=3)
         tau_g, mean_g, gamma = self._gamma_mix(model, z)
         param_hlm = self._hlm(model, gamma)
@@ -73,6 +75,7 @@ class SHLM(SHM):
 
     def _set_clustering_model(self):
         with pm.Model() as model:
+            logger.info("Using {} cluster centers".format(self.n_states))
             p = pm.Dirichlet(
               "p", a=np.repeat(1, self.n_states), shape=self.n_states)
             pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))

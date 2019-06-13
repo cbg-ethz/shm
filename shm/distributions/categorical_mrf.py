@@ -13,8 +13,9 @@ class CategoricalMRF(Discrete):
         self.__node_labels = numpy.sort(G.nodes())
         self.__n = len(self.__node_labels)
         self.__k = k
-        self.__adj = networkx.to_numpy_matrix(
+        self.__adj = networkx.to_numpy_array(
           G, nodelist=self.__node_labels, weight='weight')
+        numpy.fill_diagonal(self.__adj, 0)
         super(CategoricalMRF, self).__init__(shape=self.__n, *args, **kwargs)
 
         self.mode = scipy.repeat(0, self.__n)
@@ -32,6 +33,8 @@ class CategoricalMRF(Discrete):
         return self.__n
 
     def logp(self, value):
+        """Before anyone riots: this is fine, we never need to compute the
+        logp. So this is actually never used for critical computations."""
         return 0
 
     def random(self, point=None):
@@ -56,11 +59,7 @@ class CategoricalMRF(Discrete):
     def _gibbs(self, idx, point, node_potentials=None):
         node_pot = self._log_node_potential(node_potentials, idx)
         edge_pot = self._log_edge_potential(point, idx)
-        # TODO: is that correct ?
-        # check if all on a log scale then it is correct
-        # normalisation should be incorrect though
-        # we need to pow this iback otherwise probs are on log-scale
-        potentials = scipy.power(2, edge_pot + node_pot)
+        potentials = scipy.exp(edge_pot + node_pot)
         probabilities = potentials / numpy.sum(potentials)
         k = self.__choice(self.__classes, p=probabilities)
         return k
@@ -97,7 +96,7 @@ class CategoricalMRF(Discrete):
         if isinstance(1, int) or len(1) == 1:
             tau = numpy.tile(tau, self.__k)
         ess = [
-            scipy.log2(scipy.stats.norm.pdf(gamma, mu[i], tau[i]))
+            scipy.log(scipy.stats.norm.pdf(gamma, mu[i], tau[i]))
             for i in self.__classes
         ]
         return scipy.column_stack(ess)

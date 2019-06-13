@@ -1,10 +1,8 @@
 
-import scipy
-import scipy.stats
-
 import networkx
 import numpy
-from pymc3 import Discrete
+import scipy
+import scipy.stats
 
 from shm.distributions.categorical_mrf import CategoricalMRF
 from shm.globals import ESSENTIAL, NON_ESSENTIAL
@@ -14,14 +12,11 @@ class BinaryMRF(CategoricalMRF):
     NAME = "BinaryMRF"
 
     def __init__(self, G: networkx.Graph, *args, **kwargs):
-        self.__node_labels = numpy.sort(G.nodes())
-        self.__adj = networkx.to_numpy_matrix(
-          G, nodelist=self.__node_labels, weight='weight')
-        self.__n = len(self.__node_labels)
-        super(BinaryMRF, self).__init__(shape=self.__n, *args, **kwargs)
+        super(BinaryMRF, self).__init__(G=G, k=2, *args, **kwargs)
 
         self.mode = scipy.repeat(NON_ESSENTIAL, self.__n)
         self.__choice = scipy.stats.bernoulli.rvs
+        self.__classes = numpy.arange(2)
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
         self.__blanket = {}
 

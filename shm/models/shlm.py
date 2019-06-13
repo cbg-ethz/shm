@@ -54,7 +54,7 @@ class SHLM(SHM):
         tau_g, mean_g, gamma = self._gamma_mix(model, z)
         param_hlm = self._hlm(model, gamma)
 
-        self._set_steps(model, z, tau_g, mean_g, gamma, *param_hlm)
+        self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
         return self
 
     def _set_simple_model(self):

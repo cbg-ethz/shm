@@ -222,15 +222,18 @@ class SHM(ABC):
 
     def _gamma_mix(self, model, z):
         with model:
+
             tau_g = pm.InverseGamma(
               "tau_g", alpha=2., beta=1., shape=self.n_states)
             if self.n_states == 2:
+                logger.info("Building two-state model")
                 mean_g = pm.Normal(
                   "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=2)
                 pm.Potential(
                   "m_opot",
                   var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
             else:
+                logger.info("Building three-state model")
                 mean_g = pm.Normal(
                   "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=3)
                 pm.Potential(

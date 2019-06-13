@@ -124,9 +124,9 @@ def build_data(G, essential_genes, nonessential_genes, size):
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
-    o = st.uniform.rvs(0, .25, size=n_conditions * n_genes * n_sgrnas) + 0.75
+    o = 1
 
-    for idx in [2, 5, 7, 10]:
+    for idx in [0, 2, 5, 7, 10]:
         if size == "small" and idx > 2:
             continue
         _build_data(size, idx, count_table, l, o, G,

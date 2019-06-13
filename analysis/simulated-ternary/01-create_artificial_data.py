@@ -13,10 +13,10 @@ outpath = os.path.join("..", "..", "data_raw")
 
 gamma_tau = .25
 beta_tau = .25
-l_tau = .1
-data_tau = .25
+l_tau = .25
+data_tau = .1
 gamma_tau_non_essential = .25
-n_conditions, n_sgrnas, n_replicates = 2, 5, 5
+n_conditions, n_sgrnas, n_replicates = 2, 5, 10
 
 
 def read_graph(infile):
@@ -78,7 +78,7 @@ def write_file(G, genes, p_essential_genes, n_essential_genes,
         pickle.dump(data, out)
 
 
-def _build_data(size, idx, count_table, l, o, G,
+def _build_data(size, idx, count_table, l, G,
                 genes, p_essential_genes, n_essential_genes, nonessential_genes,
                 gamma_p_essential, gamma_n_essential, gamma_nonessential, gamma, beta):
     count_table = count_table.copy()
@@ -86,7 +86,7 @@ def _build_data(size, idx, count_table, l, o, G,
                  :idx * n_replicates]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
 
-    count_table["affinity"] = o[count_table["intervention"]]
+    count_table["affinity"] = 1
     count_table["affinity"][polr1b_idx] = .1
     count_table["affinity"][psmb1_idx] = .1
     count_table["l"] = l[count_table["intervention"]]
@@ -140,12 +140,11 @@ def build_data(G, genes, p_essential_genes, n_essential_genes, nonessential_gene
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
-    o = 1
 
     for idx in [0, 2, 5, 7, 10]:
         if size == "small" and idx > 2:
             continue
-        _build_data(size, idx, count_table, l, o, G,
+        _build_data(size, idx, count_table, l, G,
                     genes, p_essential_genes, n_essential_genes,
                     nonessential_genes,
                     gamma_p_essential, gamma_n_essential, gamma_nonessential, gamma, beta)
@@ -160,7 +159,7 @@ def run():
         n_essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K'])
         essential_genes = p_essential_genes + n_essential_genes
 
-        G = read_graph("../../data_raw/simulated_binary-full_graph.pickle")
+        G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
         nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
         np.random.seed(23)
         nonessential_genes = list(np.random.choice(nonessential_genes, 21))

@@ -13,10 +13,10 @@ outpath = os.path.join("..", "..", "data_raw")
 
 gamma_tau = .25
 beta_tau = .25
-l_tau = .1
-data_tau = .25
+l_tau = .25
+data_tau = .1
 gamma_tau_non_essential = .25
-n_conditions, n_sgrnas, n_replicates = 2, 5, 5
+n_conditions, n_sgrnas, n_replicates = 2, 5, 10
 
 
 def read_graph(infile):
@@ -25,8 +25,7 @@ def read_graph(infile):
     return G
 
 
-def get_gamma(n_essential, n_nonessential,
-              gamma_tau, gamma_tau_non_essential):
+def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
     np.random.seed(1)
     gamma_essential = sp.random.normal(-1, scale=gamma_tau, size=n_essential)
     gamma_nonessential = sp.random.normal(0, scale=gamma_tau_non_essential,
@@ -67,16 +66,16 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
         pickle.dump(data, out)
 
 
-def _build_data(size, idx, count_table, l, o, G,
+def _build_data(size, idx, count_table, l, G,
                 genes, gamma_essential, gamma_nonessential, gamma, beta):
     count_table = count_table.copy()
     polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:idx * n_replicates]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
 
-    count_table["affinity"] = o[count_table["intervention"]]
+    count_table["affinity"] = 1
     count_table["affinity"][polr1b_idx] = .1
     count_table["affinity"][psmb1_idx] = .1
-    count_table["l"] = l[count_table["intervention"]]
+    count_table["l"] = 0# l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
       count_table["l"] +
@@ -124,12 +123,11 @@ def build_data(G, essential_genes, nonessential_genes, size):
     count_table["beta"] = np.array(
       [beta_dict[g] for g in count_table["gene_conditions"].values])
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
-    o = 1
 
     for idx in [0, 2, 5, 7, 10]:
         if size == "small" and idx > 2:
             continue
-        _build_data(size, idx, count_table, l, o, G,
+        _build_data(size, idx, count_table, l, G,
                     genes, gamma_essential, gamma_nonessential, gamma, beta)
 
 
@@ -139,7 +137,7 @@ def run():
         essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
                                   "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
 
-        G = read_graph("../../data_raw/simulated_binary-full_graph.pickle")
+        G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
         nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
         np.random.seed(23)
         nonessential_genes = list(np.random.choice(nonessential_genes, 21))

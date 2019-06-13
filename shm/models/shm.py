@@ -6,7 +6,6 @@ import pandas as pd
 import pymc3 as pm
 import scipy as sp
 from sklearn.preprocessing import LabelEncoder
-import theano.tensor as tt
 
 from shm.distributions.binary_mrf import BinaryMRF
 from shm.distributions.categorical_mrf import CategoricalMRF
@@ -220,30 +219,9 @@ class SHM(ABC):
     def _hlm(self, model, gamma):
         pass
 
+    @abc.abstractmethod
     def _gamma_mix(self, model, z):
-        with model:
-
-            tau_g = pm.InverseGamma(
-              "tau_g", alpha=2., beta=1., shape=self.n_states)
-            if self.n_states == 2:
-                logger.info("Building two-state model")
-                mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=2)
-                pm.Potential(
-                  "m_opot",
-                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
-            else:
-                logger.info("Building three-state model")
-                mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=3)
-                pm.Potential(
-                  'm_opot',
-                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
-                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
-
-            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
-
-        return tau_g, mean_g, gamma
+        pass
 
     def _set_data(self):
         data = self._data

@@ -32,6 +32,10 @@ class CategoricalMRF(Discrete):
     def n_nodes(self):
         return self.__n
 
+    @property
+    def _adj(self):
+        return self.__adj
+
     def logp(self, value):
         """Before anyone riots: this is fine, we never need to compute the
         logp. So this is actually never used for critical computations."""

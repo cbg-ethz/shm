@@ -14,10 +14,10 @@ class BinaryMRF(CategoricalMRF):
     def __init__(self, G: networkx.Graph, *args, **kwargs):
         super(BinaryMRF, self).__init__(G=G, k=2, *args, **kwargs)
 
-        self.mode = scipy.repeat(NON_ESSENTIAL, self.__n)
+        self.mode = scipy.repeat(NON_ESSENTIAL, self.n_nodes)
         self.__choice = scipy.stats.bernoulli.rvs
         self.__classes = numpy.arange(2)
-        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.__n)
+        self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.n_nodes)
         self.__blanket = {}
 
     @property
@@ -41,7 +41,7 @@ class BinaryMRF(CategoricalMRF):
         """
         mb = self._markov_blank(idx)
         point_label, blanket_labs = point[idx], point[mb]
-        mb_weights = self.__adj[mb, idx]
+        mb_weights = self._adj[mb, idx]
         s1 = numpy.sum((blanket_labs == ESSENTIAL) * mb_weights)
         s2 = numpy.sum((blanket_labs != ESSENTIAL) * mb_weights)
         return s1 - s2
@@ -49,8 +49,8 @@ class BinaryMRF(CategoricalMRF):
     def _markov_blank(self, idx):
         if idx in self.__blanket:
             return self.__blanket[idx]
-        children = numpy.where(self.__adj[idx, :] != 0)[0]
-        parents = numpy.where(self.__adj[:, idx] != 0)[0]
+        children = numpy.where(self._adj[idx, :] != 0)[0]
+        parents = numpy.where(self._adj[:, idx] != 0)[0]
         blanket = numpy.unique(numpy.append(children, parents))
         self.__blanket[idx] = blanket
         return blanket
@@ -60,8 +60,8 @@ class BinaryMRF(CategoricalMRF):
             tau_0, tau_1 = tau[NON_ESSENTIAL], tau[ESSENTIAL]
         else:
             tau_0, tau_1 = tau, tau
-        non = scipy.log2(scipy.stats.norm.pdf(gamma, mu[NON_ESSENTIAL], tau_0))
-        ess = scipy.log2(scipy.stats.norm.pdf(gamma, mu[ESSENTIAL], tau_1))
+        non = scipy.log(scipy.stats.norm.pdf(gamma, mu[NON_ESSENTIAL], tau_0))
+        ess = scipy.log(scipy.stats.norm.pdf(gamma, mu[ESSENTIAL], tau_1))
         return scipy.column_stack((non, ess))
 
     def _repr_latex_(self, name=None, dist=None):

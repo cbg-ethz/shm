@@ -7,8 +7,9 @@ import warnings
 import click
 import numpy
 import pandas as pd
-import pymc3 as pm
+import pymc3
 import scipy as sp
+from pymc3 import model_to_graphviz
 
 from shm.family import Family
 from shm.link import Link
@@ -73,7 +74,9 @@ def sample(data_file, outfile, graph, family, model, ntune, ndraw, nchain):
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 
-    pm.save_trace(trace, outfile + "_trace", overwrite=True)
+    graphviz = model_to_graphviz(model.model)
+    graphviz.render(filename=outfile + "_model", format="png")
+    pymc3.save_trace(trace, outfile + "_trace", overwrite=True)
 
 
 if __name__ == "__main__":

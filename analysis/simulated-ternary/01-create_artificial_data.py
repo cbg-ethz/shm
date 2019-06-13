@@ -89,7 +89,7 @@ def _build_data(size, idx, count_table, l, G,
     count_table["affinity"] = 1
     count_table["affinity"][polr1b_idx] = .1
     count_table["affinity"][psmb1_idx] = .1
-    count_table["l"] = l[count_table["intervention"]]
+    count_table["l"] = 0 # l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
       count_table["l"] +

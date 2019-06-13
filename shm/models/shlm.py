@@ -42,14 +42,14 @@ class SHLM(SHM):
             if self.n_states == 2:
                 logger.info("Building two-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=2)
+                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=self.n_states)
                 pm.Potential(
                   "m_opot",
                   var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
             else:
                 logger.info("Building three-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=3)
+                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=self.n_states)
                 pm.Potential(
                   'm_opot',
                   tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
@@ -73,7 +73,8 @@ class SHLM(SHM):
 
     def _set_clustering_model(self):
         with pm.Model() as model:
-            p = pm.Dirichlet("p", a=np.array([1., 1.]), shape=2)
+            p = pm.Dirichlet(
+              "p", a=np.repeat(1, self.n_states), shape=self.n_states)
             pm.Potential("p_pot", var=tt.switch(tt.min(p) < 0.05, -np.inf, 0.))
             z = pm.Categorical("z", p=p, shape=self.n_genes)
         tau_g, mean_g, gamma = self._gamma_mix(model, z)

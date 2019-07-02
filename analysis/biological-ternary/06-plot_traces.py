@@ -36,29 +36,6 @@ def read_graph(infile):
     return G
 
 
-def _plot_network(graph, data, out_dir):
-    plt.figure(figsize=(10, 6))
-    pos = networkx.spring_layout(data["graph"])
-    networkx.draw_networkx_nodes(
-      data["graph"], pos=pos,
-      nodelist=list(data['essential_genes']), node_size=300,
-      node_color='#316675', font_size=15, alpha=.9, label="Essential genes")
-    networkx.draw_networkx_nodes(
-      data["graph"].subgraph(["PSMB1", "POLR1B"]), pos=pos,
-      nodelist=list(["PSMB1", "POLR1B"]), node_size=300,
-      node_color='black', font_size=15, alpha=.9)
-    networkx.draw_networkx_nodes(
-      data["graph"], pos=pos,
-      nodelist=list(data['nonessential_genes']), node_size=300,
-      node_color='black', font_size=15, alpha=.9, label="Non-essential genes")
-    networkx.draw_networkx_edges(data["graph"], pos=pos)
-    plt.axis('off')
-    plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
-               borderpad=1, bbox_to_anchor=(1, 0), ncol=1)
-    plt.savefig(out_dir + "/graph.pdf")
-    plt.savefig(out_dir + "/graph.svg")
-
-
 def _plot_data(data, ppc_trace, out_dir):
     fig, ax = sp.plot_steps(data, bins=30, histtype="bar")
     fig.set_size_inches(6, 3)
@@ -74,29 +51,6 @@ def _plot_data(data, ppc_trace, out_dir):
     plt.savefig(out_dir + "/posterior_predictive.svg")
 
 
-def _plot_forest(trace, data, model, out_dir):
-    genes = data['genes'][list(model._index_to_gene.keys())]
-    fig, _ = sp.plot_forest(trace, "gamma", genes)
-    plt.savefig(out_dir + "/gamma_forest.pdf")
-    plt.savefig(out_dir + "/gamma_forest.svg")
-    plt.close('all')
-
-
-def _plot_trace(trace, out_dir):
-    eff_samples = (arviz.effective_sample_size(trace)["gamma"]).to_dataframe()
-    k = 2
-    # fig.set_size_inches(6, 3)
-    # plt.savefig(out_dir + "/gamma_neff.svg")
-    # plt.savefig(out_dir + "/gamma_neff.pdf")
-    # plt.close('all')
-    #
-    # fig, ax = sp.plot_rhat(trace, "gamma")
-    # fig.set_size_inches(6, 3)
-    # plt.savefig(out_dir + "/gamma_rhat.pdf")
-    # plt.savefig(out_dir + "/gamma_rhat.svg")
-    # plt.close('all')
-
-
 def _plot_hist(trace, model, out_dir):
     n_g = trace['gamma'].shape[1]
     for i in range(n_g):
@@ -108,6 +62,8 @@ def _plot_hist(trace, model, out_dir):
         plt.close('all')
 
 
+# TODO : confusion matrix
+# TODO
 def _plot_posterior_labels(trace, model, out_dir):
     if 'z' in trace.varnames:
         sns.set(rc={'figure.figsize': (10, 4)})
@@ -136,9 +92,10 @@ def _write_params(model, trace, out_dir):
 def plot_model(graph, essentials, nonessentials, readout,
                trace, ppc_trace, model, out_dir):
 
+    print("params")
     _write_params(model, trace, out_dir)
 
-    #print("network")
+    print("network")
     # do we need to plot this? no not really
     # maybe in the comparison against cluster model
     #_plot_network(graph, data, out_dir)
@@ -146,11 +103,8 @@ def plot_model(graph, essentials, nonessentials, readout,
     print("data")
     #_plot_data(readout, ppc_trace, out_dir)
 
-    print("trace")
-    _plot_trace(trace,  out_dir)
-
-    # print("hist")
-    # _plot_hist(trace, model, out_dir)
+    print("hist")
+    _plot_hist(trace, model, out_dir)
     # print("forest")
     # _plot_forest(trace, data, model, out_dir)
     # print("labels")

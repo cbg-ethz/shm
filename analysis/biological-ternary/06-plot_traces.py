@@ -78,7 +78,6 @@ def _plot_hist(trace, model, out_dir):
 
 # TODO : confusion matrix
 def _plot_posterior_labels(trace, model, out_dir):
-
     if 'z' in trace.varnames:
         sns.set(rc={'figure.figsize': (10, 4)})
         ax = sp.plot_posterior_labels(

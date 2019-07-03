@@ -10,6 +10,7 @@ import arviz as az
 
 from shm.diagnostics import rhat, n_eff, cut_rhat, cut_neff
 from shm.globals import READOUT
+from shm.util import compute_posterior_probabilities
 
 sns.set_style(
   "white",
@@ -269,32 +270,23 @@ def plot_forest(trace, variable, var_name=None):
 
 
 def plot_posterior_labels(trace, genes):
-    def f(x):
-        s = pd.Series(x).value_counts()
-        s /= np.sum(s)
-        keys = list(map(str, s.keys()))
-        d = {e: i for e, i in zip(keys, s)}
-        for k in np.setdiff1d(np.array(['0', '1', '2']), keys):
-            d[k] = 0.0
-        return np.array([d[k] for k in sorted(d.keys())])
-
-    t = trace['z'][:1000, :10]
-    genes = genes[:10]
-
-    probs = np.apply_along_axis(lambda x: f(x), 0, t).T
+    probs = compute_posterior_probabilities(trace)
 
     bars = np.add(probs[:, 0], probs[:, 1]).tolist()
     pos = numpy.arange(probs.shape[0])
     barWidth = .5
 
-    fig, ax = plt.subplots(dpi=720)
+    fig, ax = plt.subplots(facecolor=(1, 1, 1))
     ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black',
             width=barWidth, label="Dependency factor")
     ax.bar(pos, probs[:, 1], bottom=probs[:, 0], color='lightgrey',
             edgecolor='black', width=barWidth, label="Neutral")
     ax.bar(pos, probs[:, 2], bottom=bars, color='#316675', edgecolor='black',
             width=barWidth, label="Restriction factor")
-
+    ax.set_facecolor('white')
+    plt.tick_params('both', left=True)
+    plt.ylim([-0.05, 1.05])
+    plt.yticks([0, .25, .5, .75, 1])
     plt.xticks(pos, genes, rotation=90, fontsize=10)
     plt.title('Posterior class labels', loc='left', fontsize=16)
     plt.legend(loc='center right', fancybox=False, framealpha=0,

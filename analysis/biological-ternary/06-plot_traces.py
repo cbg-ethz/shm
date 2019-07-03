@@ -100,13 +100,15 @@ def _write_params(model, trace, out_dir):
       out_dir + "/beta.tsv", sep="\t", index=False)
 
 
-
-def _plot_confusion_matrix(trace, model, out_dir):
+def _plot_confusion_matrix(trace, essentials, non_essentials, model, out_dir):
     probs = compute_posterior_probabilities(trace)
     df = pd.DataFrame(
       data=probs,
       columns=["dependency_factor", "neutral", "restriction_factor"])
-    df.is_essential = df.dependency_factor + df.
+    df["gene"] = [model._index_to_gene[x] for x in
+                  sorted(model._index_to_gene.keys())]
+    df["is_essential"] = df.dependency_factor + df.restriction_factor
+    df["predicted"] = numpy.where(df["is_essential"].values <= 0.5, 0, 1)
 
 
 def plot_model(graph, essentials, nonessentials, readout,
@@ -134,7 +136,7 @@ def plot_model(graph, essentials, nonessentials, readout,
     #_plot_posterior_labels(trace, model, out_dir)
 
     print("confusion")
-    #_plot_confusion_matrix(trace, model, out_dir)
+    _plot_confusion_matrix(trace, model, out_dir)
 
 
 @click.command()

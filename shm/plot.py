@@ -276,7 +276,7 @@ def plot_posterior_labels(trace, genes):
     pos = numpy.arange(probs.shape[0])
     barWidth = .5
 
-    fig, ax = plt.subplots(facecolor=(1, 1, 1))
+    fig, ax = plt.subplots()
     ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black',
             width=barWidth, label="Dependency factor")
     ax.bar(pos, probs[:, 1], bottom=probs[:, 0], color='lightgrey',
@@ -293,3 +293,18 @@ def plot_posterior_labels(trace, genes):
                shadow=False,
                borderpad=1, bbox_to_anchor=(1.25, 0.5), ncol=1)
     return ax
+
+
+def print_confusion_matrix(confusion_matrix, class_names,  fontsize=14):
+    df_cm = pd.DataFrame(
+        confusion_matrix, index=class_names, columns=class_names)
+    fig, ax = plt.subplots()
+
+    heatmap = sns.heatmap(df_cm, annot=True, fmt="d", cbar=False, ax=ax)
+    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(),
+                                 rotation=0, ha='right', fontsize=fontsize)
+    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(),
+                                 rotation=0, ha='right', fontsize=fontsize)
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    return fig, ax

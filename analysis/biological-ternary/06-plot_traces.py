@@ -15,8 +15,8 @@ import seaborn as sns
 
 import shm.plot as sp
 
-
 from shm.models.copynumber_shlm import CopynumberSHLM
+from shm.util import compute_posterior_probabilities
 
 sns.set_style(
   "white",
@@ -79,15 +79,13 @@ def _plot_hist(trace, model, out_dir):
 # TODO : confusion matrix
 def _plot_posterior_labels(trace, model, out_dir):
     if 'z' in trace.varnames:
-        sns.set(rc={'figure.figsize': (10, 4)})
-        ax = sp.plot_posterior_labels(
-          trace,
-          [model._index_to_gene[x] for x in
-           sorted(model._index_to_gene.keys())])
-        plt.tight_layout()
-        plt.savefig(out_dir + "/posterior_labels.pdf")
-        plt.savefig(out_dir + "/posterior_labels.svg")
-        plt.close('all')
+        probs = compute_posterior_probabilities(trace)
+        df = pd.DataFrame(
+          data=probs,
+          columns=["dependency_factor", "neutral", "restriction_factor"])
+        df["gene"] = [model._index_to_gene[x] for x in sorted(model._index_to_gene.keys())]
+        df = df[["gene", "dependency_factor", "neutral", "restriction factor"]]
+        df.to_csv(out_dir + "/posterior_labels.tsv", sep="\t", index=False)
 
 
 def _write_params(model, trace, out_dir):
@@ -102,29 +100,41 @@ def _write_params(model, trace, out_dir):
       out_dir + "/beta.tsv", sep="\t", index=False)
 
 
+
+def _plot_confusion_matrix(trace, model, out_dir):
+    probs = compute_posterior_probabilities(trace)
+    df = pd.DataFrame(
+      data=probs,
+      columns=["dependency_factor", "neutral", "restriction_factor"])
+    df.is_essential = df.dependency_factor + df.
+
+
 def plot_model(graph, essentials, nonessentials, readout,
                trace, ppc_trace, model, out_dir):
-
     print("params")
     _write_params(model, trace, out_dir)
 
     print("network")
     # do we need to plot this? no not really
     # maybe in the comparison against cluster model
-    #_plot_network(graph, data, out_dir)
+    # _plot_network(graph, data, out_dir)
 
     print("data")
-    #_plot_data(readout, ppc_trace, out_dir)
+    # _plot_data(readout, ppc_trace, out_dir)
 
     print("trace")
     #_plot_trace(trace, out_dir)
 
-    #print("hist")
-    #_plot_hist(trace, model, out_dir)
+    # print("hist")
+    # _plot_hist(trace, model, out_dir)
     # print("forest")
+
     # _plot_forest(trace, data, model, out_dir)
-    print("labels")
-    _plot_posterior_labels(trace, model, out_dir)
+    #print("labels")
+    #_plot_posterior_labels(trace, model, out_dir)
+
+    print("confusion")
+    #_plot_confusion_matrix(trace, model, out_dir)
 
 
 @click.command()
@@ -155,7 +165,7 @@ def run(trace, readout_tsv,
                         n_states=3,
                         use_affinity=True) as model:
         trace = pm.load_trace(trace, model=model.model)
-        #ppc_trace = pm.sample_posterior_predictive(trace, 3000, model.model)
+        # ppc_trace = pm.sample_posterior_predictive(trace, 3000, model.model)
         ppc_trace = None
 
     if not os.path.exists(out_dir):

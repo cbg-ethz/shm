@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 import pandas as pd
 from arviz import convert_to_dataset
@@ -7,6 +8,7 @@ from matplotlib import pyplot as plt
 import seaborn as sns
 import arviz as az
 
+from shm.diagnostics import rhat, n_eff, cut_rhat, cut_neff
 from shm.globals import READOUT
 
 sns.set_style(
@@ -99,7 +101,8 @@ def _var_names(var_names, data):
                         all_vars.append(var)
         else:
             all_vars = list(data.data_vars)
-        excluded_vars = [i[1:] for i in var_names if i.startswith("~") and i not in all_vars]
+        excluded_vars = [i[1:] for i in var_names if
+                         i.startswith("~") and i not in all_vars]
         if excluded_vars:
             var_names = [i for i in all_vars if i not in excluded_vars]
     return var_names
@@ -119,11 +122,8 @@ def _extract(trace):
 
 
 def plot_neff(trace, var_name, variable=None):
-    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
+    eff_samples = n_eff(trace, var_name)
     boundary = [0.1, 0.5, 1]
-    eff_samples = pd.DataFrame({
-        "neff": eff_samples[var_name].values / (len(trace) * 4),
-        "param": [var_name + str(i) for i in range(len(eff_samples))]})
     if variable is not None:
         eff_samples["param"] = variable
     low = np.where(eff_samples["neff"].values < boundary[0])
@@ -135,15 +135,12 @@ def plot_neff(trace, var_name, variable=None):
     return _plot_dotline(eff_samples, boundary, "neff",
                          low, mid, high,
                          "n_eff / n", "Effective sample size", "n_eff / n",
-                         -.1, [0.1, .5, 1])
+                         -.1, boundary)
 
 
 def plot_rhat(trace, var_name, variable=None):
-    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
     boundary = [1.05, 1.1, 1.5]
-    rhat_samples = pd.DataFrame({
-        "rhat": rhat_samples[var_name].values,
-        "param": [var_name + str(i) for i in range(len(rhat_samples))]})
+    rhat_samples = rhat(trace, var_name)
     if variable is not None:
         rhat_samples["param"] = variable
     low = np.where(rhat_samples["rhat"].values < boundary[0])
@@ -155,7 +152,28 @@ def plot_rhat(trace, var_name, variable=None):
     return _plot_dotline(rhat_samples, boundary, "rhat",
                          low, mid, high, r"\hat{R}",
                          "Potential scale reduction factor", r"$\hat{R}$",
-                         0.95, [1, 1.05, 1.1, 1.5])
+                         0.95, [1] + boundary)
+
+
+def _plot_bar(data, title):
+    fig, ax = plt.subplots()
+    sns.barplot(x="cut", y="bins", data=data, color="#045a8d", ax=ax)
+    ax.spines['bottom'].set_visible(False)
+    plt.xlabel("")
+    plt.ylabel("Count")
+    plt.title(title, loc="Left")
+    plt.tight_layout()
+    return fig, ax
+
+
+def plot_neff_bar(trace, var_name):
+    data = cut_neff(trace, var_name)
+    return _plot_bar(data, "Effective sample size")
+
+
+def plot_rhat_bar(trace, var_name):
+    data = cut_rhat(trace, var_name)
+    return _plot_bar(data, r"Rank $\hat{R}$")
 
 
 def plot_parallel(trace):
@@ -250,22 +268,36 @@ def plot_forest(trace, variable, var_name=None):
     return fig, ax
 
 
-def plot_posterior_labels(trace, genes, cols=["#E84646", "#316675"]):
-    P1 = np.mean(trace['z'], 0)
-    P0 = 1 - P1
-    len_z = len(P1)
-    prob_table = pd.DataFrame({
-        "Probability": np.concatenate((P0, P1)),
-        "o": np.append(np.repeat("No-hit", len_z), np.repeat("Hit", len_z)),
-        "Gene": np.tile(genes, 2)})
-    ax = sns.barplot(x="Gene", y="Probability", hue="o",
-                     data=prob_table, palette=cols,
-                     linewidth=2.5, edgecolor=".2")
-    ax.set_ylim(0, 1)
-    sns.despine()
-    plt.xlabel('')
-    plt.xticks(rotation=90, fontsize=10)
+def plot_posterior_labels(trace, genes):
+    def f(x):
+        s = pd.Series(x).value_counts()
+        s /= np.sum(s)
+        keys = list(map(str, s.keys()))
+        d = {e: i for e, i in zip(keys, s)}
+        for k in np.setdiff1d(np.array(['0', '1', '2']), keys):
+            d[k] = 0.0
+        return np.array([d[k] for k in sorted(d.keys())])
+
+    t = trace['z'][:1000, :10]
+    genes = genes[:10]
+
+    probs = np.apply_along_axis(lambda x: f(x), 0, t).T
+
+    bars = np.add(probs[:, 0], probs[:, 1]).tolist()
+    pos = numpy.arange(probs.shape[0])
+    barWidth = .5
+
+    fig, ax = plt.subplots(dpi=720)
+    ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black',
+            width=barWidth, label="Dependency factor")
+    ax.bar(pos, probs[:, 1], bottom=probs[:, 0], color='lightgrey',
+            edgecolor='black', width=barWidth, label="Neutral")
+    ax.bar(pos, probs[:, 2], bottom=bars, color='#316675', edgecolor='black',
+            width=barWidth, label="Restriction factor")
+
+    plt.xticks(pos, genes, rotation=90, fontsize=10)
     plt.title('Posterior class labels', loc='left', fontsize=16)
-    plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
+    plt.legend(loc='center right', fancybox=False, framealpha=0,
+               shadow=False,
                borderpad=1, bbox_to_anchor=(1.25, 0.5), ncol=1)
     return ax

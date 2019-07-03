@@ -53,23 +53,16 @@ def _plot_data(data, ppc_trace, out_dir):
 
 
 def _plot_trace(trace, out_dir):
-    eff_samples = (arviz.effective_sample_size(trace)["gamma"]).to_dataframe()
-    eff_samples = pandas.cut(
-        eff_samples["gamma"].values,
-      bins=[-numpy.inf, 4, 12, numpy.inf], labels=['A', 'B', 'C'])
+    fig, ax = sp.plot_neff_bar(trace, "gamma")
+    fig.set_size_inches(6, 4)
+    plt.savefig(out_dir + "/gamma_neff.svg")
+    plt.savefig(out_dir + "/gamma_neff.pdf")
 
-    pandas.cut(x, )
-    print(eff_samples)
-    # fig.set_size_inches(10, 4)
-    # plt.savefig(out_dir + "/gamma_neff.svg")
-    # plt.savefig(out_dir + "/gamma_neff.pdf")
-    # plt.close('all')
-    #
-    # fig, ax = sp.plot_rhat(trace, "gamma")
-    # fig.set_size_inches(10, 4)
-    # plt.savefig(out_dir + "/gamma_rhat.pdf")
-    # plt.savefig(out_dir + "/gamma_rhat.svg")
-    # plt.close('all')
+    fig, ax = sp.plot_rhat_bar(trace, "gamma")
+    fig.set_size_inches(6, 4)
+    plt.savefig(out_dir + "/gamma_rhat.pdf")
+    plt.savefig(out_dir + "/gamma_rhat.svg")
+    plt.close('all')
 
 
 def _plot_hist(trace, model, out_dir):
@@ -84,8 +77,8 @@ def _plot_hist(trace, model, out_dir):
 
 
 # TODO : confusion matrix
-# TODO
 def _plot_posterior_labels(trace, model, out_dir):
+
     if 'z' in trace.varnames:
         sns.set(rc={'figure.figsize': (10, 4)})
         ax = sp.plot_posterior_labels(
@@ -125,14 +118,14 @@ def plot_model(graph, essentials, nonessentials, readout,
     #_plot_data(readout, ppc_trace, out_dir)
 
     print("trace")
-    _plot_trace(trace, out_dir)
+    #_plot_trace(trace, out_dir)
 
     #print("hist")
     #_plot_hist(trace, model, out_dir)
     # print("forest")
     # _plot_forest(trace, data, model, out_dir)
-    # print("labels")
-    # _plot_posterior_labels(trace, model, out_dir)
+    print("labels")
+    _plot_posterior_labels(trace, model, out_dir)
 
 
 @click.command()
@@ -168,6 +161,7 @@ def run(trace, readout_tsv,
 
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
+
     plot_model(graph, essentials, nonessentials, readout,
                trace, ppc_trace, model, out_dir)
 

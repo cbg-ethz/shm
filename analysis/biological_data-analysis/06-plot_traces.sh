@@ -2,7 +2,7 @@
 
 function run {
     echo "Submitting jobs"
-    bsub -W 4:00 -n 1 -R "rusage[mem=25000]" python plot_traces.py \
+    bsub -W 4:00 -n 1 -R "rusage[mem=25000]" python 06-plot_traces.py \
         ${2} \
         ../../data_raw/biological_ternary-data.tsv \
         "/cluster/home/simondi/simondi/data/shm/achilles/achilles-common_essentials.csv" \

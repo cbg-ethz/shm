@@ -3,18 +3,15 @@
 import os
 import pickle
 
-import arviz
 import click
 import matplotlib.pyplot as plt
-import networkx
 import numpy
-import pandas
 import pandas as pd
 import pymc3 as pm
 import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 import shm.plot as sp
-
 from shm.models.copynumber_shlm import CopynumberSHLM
 from shm.util import compute_posterior_probabilities
 
@@ -76,15 +73,24 @@ def _plot_hist(trace, model, out_dir):
         plt.close('all')
 
 
-# TODO : confusion matrix
 def _plot_posterior_labels(trace, model, out_dir):
+    gamma_pred_mean = numpy.mean(trace['gamma'], 0)[
+        sorted(model._index_to_gene.keys())
+    ]
+
+    gamma_pred_mean2 = numpy.mean(trace['gamma'], 0)[list(model._index_to_gene.keys())]
+
     if 'z' in trace.varnames:
         probs = compute_posterior_probabilities(trace)
         df = pd.DataFrame(
           data=probs,
           columns=["dependency_factor", "neutral", "restriction_factor"])
         df["gene"] = [model._index_to_gene[x] for x in sorted(model._index_to_gene.keys())]
-        df = df[["gene", "dependency_factor", "neutral", "restriction factor"]]
+        df["gene2"] = [model._index_to_gene[x] for x in
+                      model._index_to_gene.keys()]
+        df["gamma"] = gamma_pred_mean
+        df["gamma2"] = gamma_pred_mean2
+        df = df[["gene", "gene2", "gamma", "gamma2", "dependency_factor", "neutral", "restriction_factor"]]
         df.to_csv(out_dir + "/posterior_labels.tsv", sep="\t", index=False)
 
 
@@ -103,12 +109,24 @@ def _write_params(model, trace, out_dir):
 def _plot_confusion_matrix(trace, essentials, non_essentials, model, out_dir):
     probs = compute_posterior_probabilities(trace)
     df = pd.DataFrame(
-      data=probs,
-      columns=["dependency_factor", "neutral", "restriction_factor"])
-    df["gene"] = [model._index_to_gene[x] for x in
-                  sorted(model._index_to_gene.keys())]
+      data=probs, columns=["dependency_factor", "neutral", "restriction_factor"])
+    df["gene"] = [model._index_to_gene[x]
+                  for x in sorted(model._index_to_gene.keys())]
     df["is_essential"] = df.dependency_factor + df.restriction_factor
-    df["predicted"] = numpy.where(df["is_essential"].values <= 0.5, 0, 1)
+    df["predicted"] = numpy.where(df["neutral"].values > 0.6, 0, 1)
+    df["truth"] = -1
+    df.loc[df["gene"].isin(essentials["gene"]), "truth"] = 1
+    df.loc[df["gene"].isin(non_essentials["gene"]), "truth"] = 0
+    df = df[df.truth != -1]
+
+    cm = confusion_matrix(df.truth.values, df.predicted.values)
+
+    fig, ax = sp.plot_confusion_matrix(cm, ["Essential", "Non-essential"])
+    fig.set_size_inches(8, 4)
+    plt.tight_layout()
+    plt.savefig(out_dir + "/confusion_matrix.svg")
+    plt.savefig(out_dir + "/confusion_matrix.pdf")
+    plt.close('all')
 
 
 def plot_model(graph, essentials, nonessentials, readout,
@@ -122,7 +140,7 @@ def plot_model(graph, essentials, nonessentials, readout,
     # _plot_network(graph, data, out_dir)
 
     print("data")
-    # _plot_data(readout, ppc_trace, out_dir)
+    _plot_data(readout, ppc_trace, out_dir)
 
     print("trace")
     #_plot_trace(trace, out_dir)
@@ -130,13 +148,13 @@ def plot_model(graph, essentials, nonessentials, readout,
     # print("hist")
     # _plot_hist(trace, model, out_dir)
     # print("forest")
-
     # _plot_forest(trace, data, model, out_dir)
-    #print("labels")
-    #_plot_posterior_labels(trace, model, out_dir)
+
+    print("labels")
+    _plot_posterior_labels(trace, model, out_dir)
 
     print("confusion")
-    _plot_confusion_matrix(trace, model, out_dir)
+    _plot_confusion_matrix(trace, essentials, nonessentials, model, out_dir)
 
 
 @click.command()

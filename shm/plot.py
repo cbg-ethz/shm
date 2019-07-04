@@ -295,16 +295,18 @@ def plot_posterior_labels(trace, genes):
     return ax
 
 
-def print_confusion_matrix(confusion_matrix, class_names,  fontsize=14):
+def plot_confusion_matrix(confusion_matrix, class_names, fontsize=14):
     df_cm = pd.DataFrame(
-        confusion_matrix, index=class_names, columns=class_names)
-    fig, ax = plt.subplots()
+      confusion_matrix, index=class_names, columns=class_names)
 
+    fig, ax = plt.subplots()
     heatmap = sns.heatmap(df_cm, annot=True, fmt="d", cbar=False, ax=ax)
     heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(),
-                                 rotation=0, ha='right', fontsize=fontsize)
+                                 ha='right',
+                                 fontsize=fontsize - 2)
     heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(),
-                                 rotation=0, ha='right', fontsize=fontsize)
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+                                 fontsize=fontsize - 2)
+    plt.ylabel('True label', fontsize=fontsize)
+    plt.xlabel('Predicted label', fontsize=fontsize)
+    plt.title("Confusion matrix", loc='left', fontsize=fontsize + 2)
     return fig, ax

@@ -300,9 +300,9 @@ def plot_confusion_matrix(confusion_matrix, class_names, fontsize=14):
       confusion_matrix, index=class_names, columns=class_names)
 
     fig, ax = plt.subplots()
-    heatmap = sns.heatmap(df_cm, annot=True, fmt="d", cbar=False, ax=ax)
+    heatmap = sns.heatmap(df_cm, annot=True, cmap="Blues", fmt="d", cbar=False, ax=ax)
     heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(),
-                                 ha='right',
+                                 va='center',
                                  fontsize=fontsize - 2)
     heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(),
                                  fontsize=fontsize - 2)

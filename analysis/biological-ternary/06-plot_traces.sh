@@ -2,7 +2,7 @@
 
 function run {
     python 06-plot_traces.py \
-    ../../../../results/biological_ternary/biological_ternary-${1}_model_trace/ \
+    ../../../../results/biological_ternary/current/biological_ternary-${1}_model_trace/ \
     ../../data_raw/biological_ternary-data.tsv \
     ../../../../data_raw/achilles/achilles-common_essentials.csv \
     ../../../../data_raw/achilles/achilles-common_nonessentials.csv \

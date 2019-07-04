@@ -145,7 +145,7 @@ def plot_model(graph, essentials, nonessentials, readout,
     print("trace")
     #_plot_trace(trace, out_dir)
 
-    # print("hist")
+    #print("hist")
     # _plot_hist(trace, model, out_dir)
     # print("forest")
     # _plot_forest(trace, data, model, out_dir)

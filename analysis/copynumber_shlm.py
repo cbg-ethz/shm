@@ -63,9 +63,9 @@ class CopynumberSHLM(SHLM):
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
-            l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
+            l_tau = pm.InverseGamma("tau_iota", alpha=2., beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
-            c = pm.Normal("cn", 0, 1, shape=1)
+            c = pm.Normal("kappa", 0, 1, shape=1)
 
             if self._use_affinity:
                 q = self.data[AFFINITY].values

@@ -67,30 +67,6 @@ class SHLM(SHM):
             family = Family.from_str(family)
         self._family = family
 
-    def _gamma_mix(self, model, z):
-        with model:
-            tau_g = pm.InverseGamma(
-              "tau_g", alpha=2., beta=1., shape=self.n_states)
-            if self.n_states == 2:
-                logger.info("Building two-state model")
-                mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=self.n_states)
-                pm.Potential(
-                  "m_opot",
-                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
-            else:
-                logger.info("Building three-state model")
-                mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=self.n_states)
-                pm.Potential(
-                  'm_opot',
-                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
-                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
-
-            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
-
-        return tau_g, mean_g, gamma
-
     def _set_mrf_model(self):
         with pm.Model() as model:
             if self.n_states == 2:
@@ -118,12 +94,36 @@ class SHLM(SHM):
         self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
         return self
 
+    def _gamma_mix(self, model, z):
+        with model:
+            tau_g = pm.InverseGamma(
+              "tau_g", alpha=2., beta=1., shape=self.n_states)
+            if self.n_states == 2:
+                logger.info("Building two-state model")
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=self.n_states)
+                pm.Potential(
+                  "m_opot",
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
+            else:
+                logger.info("Building three-state model")
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=self.n_states)
+                pm.Potential(
+                  'm_opot',
+                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
+                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
+
+            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
+
+        return tau_g, mean_g, gamma
+
     def _hlm(self, model, gamma):
         with model:
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
-            l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
+            l_tau = pm.InverseGamma("tau_iota", alpha=2., beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
 
             mu = (gamma[self._gene_data_idx] +

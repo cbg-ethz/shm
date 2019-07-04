@@ -1,9 +1,0 @@
-# number of states of the random field
-n_states: 3
-# parameters for gene effects
-tau_g_alpha: 2
-# parameters for the gene-condition effects
-tau_b_alpha: 2
-# parameters for the interventional effects
-l_tau_alpha: 2
-sd_alpha: 2

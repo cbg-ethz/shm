@@ -27,7 +27,7 @@ class SHLM(SHM):
                  model="clustering",
                  n_states=2,
                  graph=None,
-                 sampler="metropolis"):
+                 sampler="nuts"):
         self._data = data
 
         self._set_link(link_function)

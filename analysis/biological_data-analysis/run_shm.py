@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-
+import datetime
 import logging
+import os
 import pickle
 import warnings
 
@@ -8,13 +9,10 @@ import click
 import numpy
 import pandas as pd
 import pymc3 as pm
-import scipy as sp
 
-from shm.family import Family
+from analysis.copynumber_shlm import CopynumberSHLM
 from shm.globals import READOUT, INTERVENTION, CONDITION, GENE, REPLICATE, \
     COPYNUMBER, AFFINITY
-from shm.link import Link
-from analysis.copynumber_shlm import CopynumberSHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")
@@ -24,10 +22,8 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
-def _load_data(infile, family):
+def _load_data(infile):
     dat = pd.read_csv(infile, sep="\t")
-    if family != "gaussian":
-        dat[READOUT] = sp.floor(dat[READOUT].values)
     cols = [GENE, CONDITION, INTERVENTION, REPLICATE,
             READOUT, COPYNUMBER, AFFINITY]
     for c in cols:
@@ -51,29 +47,25 @@ def _read_graph(infile, data):
 @click.command()
 @click.argument("data_file", type=str)
 @click.argument("graph", type=str)
-@click.argument("outfile", type=str)
-@click.option('--family',
-              type=click.Choice(["gaussian", "poisson"]),
-              default="gaussian")
+@click.argument("outfolder", type=str)
 @click.option('--model',
-              type=click.Choice(["mrf", "clustering", "simple"]),
-              default="simple")
+              type=click.Choice(["mrf", "clustering"]),
+              default="clustering")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--nchain", type=int, default=4)
-def sample(data_file, outfile, graph, family, model, ntune, ndraw, nchain):
-    read_counts = _load_data(data_file, family)
-    link_function = Link.identity if family == "gaussian" else Link.log
-    family = Family.gaussian if family == "gaussian" else Family.poisson
+def sample(data_file, outfolder, graph, model, ntune, ndraw, nchain):
+
+    date = datetime.datetime.now().strftime("%Y_%m_%d-%H:%M")
+    outfile = os.path.join(outfolder,
+                           "biological-{}-{}_model".format(date, model))
+
+    read_counts = _load_data(data_file)
     graph, read_counts = _read_graph(graph, read_counts)
 
     with CopynumberSHLM(data=read_counts,
-                        family=family,
-                        link_function=link_function,
                         model=model,
-                        sampler="nuts",
                         graph=graph,
-                        n_states=3,
                         use_affinity=True) as model:
         logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)

@@ -20,10 +20,10 @@ class CopynumberSHLM(SHLM):
                  data: pd.DataFrame,
                  family="gaussian",
                  link_function=Link.identity,
-                 model="simple",
+                 model="clustering",
                  n_states=2,
                  graph=None,
-                 sampler="metropolis",
+                 sampler="nuts",
                  use_affinity=False):
         self._use_affinity = use_affinity
         super().__init__(data=data,

@@ -21,7 +21,7 @@ class SHM(ABC):
                  model=Model.clustering,
                  n_states=2,
                  graph=None,
-                 sampler=Sampler.metropolis):
+                 sampler=Sampler.nuts):
 
         self._graph = graph
         self._node_labels = scipy.sort(graph.nodes())

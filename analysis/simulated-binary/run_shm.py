@@ -13,7 +13,7 @@ from pymc3 import model_to_graphviz
 
 from shm.family import Family
 from shm.link import Link
-from shm.models.shlm import SHLM
+from analysis.shlm import SHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")

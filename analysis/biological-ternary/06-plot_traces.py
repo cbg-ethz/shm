@@ -12,7 +12,7 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix
 
 import shm.plot as sp
-from shm.models.copynumber_shlm import CopynumberSHLM
+from analysis.copynumber_shlm import CopynumberSHLM
 from shm.util import compute_posterior_probabilities
 
 sns.set_style(

@@ -7,7 +7,7 @@ import pymc3 as pm
 from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
-from shm.models.shlm import SHLM
+from analysis.shlm import SHLM
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -32,6 +32,30 @@ class CopynumberSHLM(SHLM):
                          n_states=n_states,
                          graph=graph,
                          sampler=sampler)
+
+    def _gamma_mix(self, model, z):
+        with model:
+            tau_g = pm.InverseGamma(
+              "tau_g", alpha=2., beta=1., shape=self.n_states)
+            if self.n_states == 2:
+                logger.info("Building two-state model")
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=self.n_states)
+                pm.Potential(
+                  "m_opot",
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
+            else:
+                logger.info("Building three-state model")
+                mean_g = pm.Normal(
+                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=self.n_states)
+                pm.Potential(
+                  'm_opot',
+                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
+                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
+
+            gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
+
+        return tau_g, mean_g, gamma
 
     def _hlm(self, model, gamma):
         with model:

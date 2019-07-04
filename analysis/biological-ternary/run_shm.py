@@ -14,7 +14,7 @@ from shm.family import Family
 from shm.globals import READOUT, INTERVENTION, CONDITION, GENE, REPLICATE, \
     COPYNUMBER, AFFINITY
 from shm.link import Link
-from shm.models.copynumber_shlm import CopynumberSHLM
+from analysis.copynumber_shlm import CopynumberSHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")

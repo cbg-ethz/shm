@@ -12,7 +12,7 @@ import scipy as sp
 
 from shm.family import Family
 from shm.link import Link
-from shm.models.shlm import SHLM
+from analysis.shlm import SHLM
 
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("pymc3")

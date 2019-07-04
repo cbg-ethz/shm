@@ -9,7 +9,6 @@ function submit_run {
             ../../data_raw/biological-data.tsv \
              ../../data_raw/biological-graph.pickle \
             "/cluster/home/simondi/simondi/data/shm/" \
-            --family gaussian \
             --ntune 20000 \
             --ndraw 30000 \
             --nchain 2 \

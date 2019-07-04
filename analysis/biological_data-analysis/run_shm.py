@@ -58,8 +58,8 @@ def _read_graph(infile, data):
 def sample(data_tsv, graph_pickle, outfolder, model, ntune, ndraw, nchain):
 
     date = datetime.datetime.now().strftime("%Y_%m_%d-%H%M")
-    outfile = os.path.join(outfolder,
-                           "biological-{}-{}_model".format(date, model))
+    outfile = os.path.join(
+      outfolder, "biological-{}-{}_model".format(date, model))
     logfile = outfile + ".log"
 
     hdlr = logging.FileHandler(logfile)
@@ -74,11 +74,9 @@ def sample(data_tsv, graph_pickle, outfolder, model, ntune, ndraw, nchain):
                         model=model,
                         graph=graph,
                         use_affinity=True) as model:
-        logger.info("Sampling")
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
-
 
 if __name__ == "__main__":
     sample()

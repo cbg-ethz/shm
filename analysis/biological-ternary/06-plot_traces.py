@@ -9,6 +9,7 @@ import numpy
 import pandas as pd
 import pymc3 as pm
 import seaborn as sns
+from pymc3 import model_to_graphviz
 from sklearn.metrics import confusion_matrix
 
 import shm.plot as sp
@@ -129,32 +130,41 @@ def _plot_confusion_matrix(trace, essentials, non_essentials, model, out_dir):
     plt.close('all')
 
 
+def _plot_graphviz(model, out_dir):
+    gra = model_to_graphviz(model)
+    gra.render(out_dir + "/graphviz.pdf")
+
+
 def plot_model(graph, essentials, nonessentials, readout,
                trace, ppc_trace, model, out_dir):
-    print("params")
-    _write_params(model, trace, out_dir)
 
-    print("network")
-    # do we need to plot this? no not really
-    # maybe in the comparison against cluster model
-    # _plot_network(graph, data, out_dir)
+    print("graphviz")
+    _plot_graphviz(model.model, out_dir)
 
-    print("data")
-    _plot_data(readout, ppc_trace, out_dir)
-
-    print("trace")
-    #_plot_trace(trace, out_dir)
-
-    #print("hist")
-    # _plot_hist(trace, model, out_dir)
-    # print("forest")
-    # _plot_forest(trace, data, model, out_dir)
-
-    print("labels")
-    _plot_posterior_labels(trace, model, out_dir)
-
-    print("confusion")
-    _plot_confusion_matrix(trace, essentials, nonessentials, model, out_dir)
+    # print("params")
+    # _write_params(model, trace, out_dir)
+    #
+    # print("network")
+    # # do we need to plot this? no not really
+    # # maybe in the comparison against cluster model
+    # # _plot_network(graph, data, out_dir)
+    #
+    # print("data")
+    # _plot_data(readout, ppc_trace, out_dir)
+    #
+    # print("trace")
+    # #_plot_trace(trace, out_dir)
+    #
+    # #print("hist")
+    # # _plot_hist(trace, model, out_dir)
+    # # print("forest")
+    # # _plot_forest(trace, data, model, out_dir)
+    #
+    # print("labels")
+    # _plot_posterior_labels(trace, model, out_dir)
+    #
+    # print("confusion")
+    # _plot_confusion_matrix(trace, essentials, nonessentials, model, out_dir)
 
 
 @click.command()

@@ -28,19 +28,22 @@ class SHLM(SHM):
                  n_states=2,
                  graph=None,
                  sampler="metropolis"):
+        self._data = data
+
+        self._set_link(link_function)
+        self._set_family(family)
+        self._set_data()
+
         super().__init__(model=model,
                          n_states=n_states,
                          graph=graph,
                          sampler=sampler)
-        self._data = data
+
         if graph:
             d_genes = sp.sort(sp.unique(self._data.gene.values))
             if not sp.array_equal(d_genes, self.node_labels):
                 raise ValueError("Graph nodes != data genes")
 
-        self._set_link(link_function)
-        self._set_family(family)
-        self._set_data()
 
     @property
     def data(self):
@@ -115,23 +118,13 @@ class SHLM(SHM):
         self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
         return self
 
-    def _set_simple_model(self):
-        with pm.Model() as model:
-            tau_g = pm.InverseGamma("tau_g", alpha=2., beta=1., shape=1)
-            mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
-            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
-        param_hlm = self._hlm(model, gamma)
-
-        self._set_steps(model, None, tau_g, mean_g, gamma, *param_hlm)
-        return self
-
     def _hlm(self, model, gamma):
         with model:
             tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
             l_tau = pm.InverseGamma("tau_l", alpha=2., beta=1., shape=1)
-            l = pm.Normal("l", mu=0, sd=l_tau, shape=self.n_interventions)
+            l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
 
             mu = (gamma[self._gene_data_idx] +
                   beta[self._gene_cond_data_idx] +

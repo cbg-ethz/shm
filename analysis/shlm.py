@@ -44,6 +44,12 @@ class SHLM(SHM):
             if not sp.array_equal(d_genes, self.node_labels):
                 raise ValueError("Graph nodes != data genes")
 
+        self.tau_g_alpha = 2
+        self.tau_b_alpha = 2
+        self.tau_iota_alpha = 2
+        self.kappa_sd = 1
+        self.sd_alpha = 2
+
 
     @property
     def data(self):
@@ -96,23 +102,25 @@ class SHLM(SHM):
 
     def _gamma_mix(self, model, z):
         with model:
+            logger.info("Using tau_g_alpha: {}".format(self.tau_g_alpha))
             tau_g = pm.InverseGamma(
-              "tau_g", alpha=2., beta=1., shape=self.n_states)
+              "tau_g", alpha=self.tau_g_alpha, beta=1., shape=self.n_states)
+
             if self.n_states == 2:
                 logger.info("Building two-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1., 0.]), sd=1, shape=self.n_states)
+                  "mu_g", mu=np.array([-1., 0.]), sd=1, shape=self.n_states)
                 pm.Potential(
                   "m_opot",
-                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -sp.inf, 0.))
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
             else:
                 logger.info("Building three-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=sp.array([-1, 0., 1.]), sd=1, shape=self.n_states)
+                  "mu_g", mu=np.array([-1, 0., 1.]), sd=1, shape=self.n_states)
                 pm.Potential(
                   'm_opot',
-                  tt.switch(mean_g[1] - mean_g[0] < 0, -sp.inf, 0)
-                  + tt.switch(mean_g[2] - mean_g[1] < 0, -sp.inf, 0))
+                  tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0)
+                  + tt.switch(mean_g[2] - mean_g[1] < 0, -np.inf, 0))
 
             gamma = pm.Normal("gamma", mean_g[z], tau_g[z], shape=self.n_genes)
 
@@ -120,10 +128,12 @@ class SHLM(SHM):
 
     def _hlm(self, model, gamma):
         with model:
-            tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
+            logger.info("Using tau_b_alpha: {}".format(self.tau_b_alpha))
+            tau_b = pm.InverseGamma("tau_b", alpha=self.tau_b_alpha, beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
-            l_tau = pm.InverseGamma("tau_iota", alpha=2., beta=1., shape=1)
+            logger.info("Using tau_iota_alpha: {}".format(self.tau_iota_alpha))
+            l_tau = pm.InverseGamma("tau_iota", alpha=self.tau_iota_alpha, beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
 
             mu = (gamma[self._gene_data_idx] +
@@ -131,7 +141,8 @@ class SHLM(SHM):
                   l[self._intervention_data_idx])
 
             if self.family == Family.gaussian:
-                sd = pm.InverseGamma("sd", alpha=2., beta=1., shape=1)
+                logger.info("Using sd_alpha: {}".format(self.sd_alpha))
+                sd = pm.InverseGamma("sd", alpha=self.sd_alpha, beta=1., shape=1)
                 pm.Normal("x",
                           mu=mu,
                           sd=sd,

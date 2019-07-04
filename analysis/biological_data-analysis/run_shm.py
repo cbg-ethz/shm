@@ -22,6 +22,7 @@ logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
 
 
+
 def _load_data(infile):
     dat = pd.read_csv(infile, sep="\t")
     cols = [GENE, CONDITION, INTERVENTION, REPLICATE,
@@ -45,8 +46,8 @@ def _read_graph(infile, data):
 
 
 @click.command()
-@click.argument("data_file", type=str)
-@click.argument("graph", type=str)
+@click.argument("data_tsv", type=str)
+@click.argument("graph_pickle", type=str)
 @click.argument("outfolder", type=str)
 @click.option('--model',
               type=click.Choice(["mrf", "clustering"]),
@@ -54,14 +55,20 @@ def _read_graph(infile, data):
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--nchain", type=int, default=4)
-def sample(data_file, outfolder, graph, model, ntune, ndraw, nchain):
+def sample(data_tsv, graph_pickle, outfolder, model, ntune, ndraw, nchain):
 
-    date = datetime.datetime.now().strftime("%Y_%m_%d-%H:%M")
+    date = datetime.datetime.now().strftime("%Y_%m_%d-%H%M")
     outfile = os.path.join(outfolder,
                            "biological-{}-{}_model".format(date, model))
+    logfile = outfile + ".log"
 
-    read_counts = _load_data(data_file)
-    graph, read_counts = _read_graph(graph, read_counts)
+    hdlr = logging.FileHandler(logfile)
+    hdlr.setFormatter(logging.Formatter(
+      "[%(asctime)s - %(levelname)s - %(name)s]: %(message)s'"))
+    logging.getLogger().addHandler(hdlr)
+
+    read_counts = _load_data(data_tsv)
+    graph, read_counts = _read_graph(graph_pickle, read_counts)
 
     with CopynumberSHLM(data=read_counts,
                         model=model,

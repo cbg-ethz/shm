@@ -26,6 +26,11 @@ class CopynumberSHLM(SHLM):
                  sampler="nuts",
                  use_affinity=False):
         self._use_affinity = use_affinity
+        self.tau_g_alpha = 2
+        self.tau_b_alpha = 2
+        self.tau_iota_alpha = 2
+        self.kappa_sd = 1
+        self.sd_alpha = 2
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
@@ -36,8 +41,9 @@ class CopynumberSHLM(SHLM):
 
     def _gamma_mix(self, model, z):
         with model:
+            logger.info("Using tau_g_alpha: {}".format(self.tau_g_alpha))
             tau_g = pm.InverseGamma(
-              "tau_g", alpha=2., beta=1., shape=self.n_states)
+              "tau_g", alpha=self.tau_g_alpha, beta=1., shape=self.n_states)
             if self.n_states == 2:
                 logger.info("Building two-state model")
                 mean_g = pm.Normal(
@@ -60,12 +66,16 @@ class CopynumberSHLM(SHLM):
 
     def _hlm(self, model, gamma):
         with model:
-            tau_b = pm.InverseGamma("tau_b", alpha=2., beta=1., shape=1)
+            logger.info("Using tau_b_alpha: {}".format(self.tau_b_alpha))
+            tau_b = pm.InverseGamma("tau_b", alpha=self.tau_b_alpha, beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
-            l_tau = pm.InverseGamma("tau_iota", alpha=2., beta=1., shape=1)
+            logger.info("Using tau_iota_alpha: {}".format(self.tau_iota_alpha))
+            l_tau = pm.InverseGamma("tau_iota", alpha=self.tau_iota_alpha, beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
-            c = pm.Normal("kappa", 0, 1, shape=1)
+
+            logger.info("Using kappa_sd: {}".format(self.kappa_sd))
+            c = pm.Normal("kappa", 0, self.kappa_sd, shape=1)
 
             if self._use_affinity:
                 q = self.data[AFFINITY].values
@@ -77,7 +87,8 @@ class CopynumberSHLM(SHLM):
                  c * self.data[COPYNUMBER].values
 
             if self.family == Family.gaussian:
-                sd = pm.InverseGamma("sd", alpha=2., beta=1., shape=1)
+                logger.info("Using sd_alpha: {}".format(self.sd_alpha))
+                sd = pm.InverseGamma("sd", alpha=self.sd_alpha, beta=1., shape=1)
                 pm.Normal("x",
                           mu=mu,
                           sd=sd,

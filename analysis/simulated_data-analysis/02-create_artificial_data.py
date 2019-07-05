@@ -14,7 +14,7 @@ outpath = os.path.join("..", "..", "data_raw")
 
 gamma_tau = .25
 beta_tau = .25
-l_tau = .25
+l_tau = .1
 gamma_tau_non_essential = .25
 n_conditions, n_sgrnas, n_replicates = 2, 5, 10
 mod_genes = ["POLR2D", "PSMC1"]
@@ -36,7 +36,7 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
 
 
 def write_file(G, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, count_table, suffix):
+               gamma, beta, l, count_table, suffix, data_tau):
     count_table.to_csv(
       os.path.join(outpath, "simulated_binary-{}-simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
@@ -57,8 +57,8 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
         "gamma": gamma,
         "beta_tau": beta_tau,
         "beta": beta,
-        "l_tau": l_tau,
-        "l": l,
+        "iota_tau": l_tau,
+        "iota": l,
         "data_tau": data_tau,
         "count_table": count_table
     }
@@ -72,12 +72,12 @@ def _build_data(size, idx, count_table, l, G,
                 beta, data_tau):
 
     count_table = count_table.copy()
-    polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:idx * n_replicates]
-    psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
+    pol_idx = np.where(count_table['gene'] == mod_genes[0])[0][:idx * n_replicates]
+    psm_idx = np.where(count_table['gene'] == mod_genes[1])[0][:idx * n_replicates]
 
     count_table["affinity"] = 1
-    count_table["affinity"][polr1b_idx] = .1
-    count_table["affinity"][psmb1_idx] = .1
+    count_table["affinity"][pol_idx] = .1
+    count_table["affinity"][psm_idx] = .1
     count_table["iota"] = l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
@@ -90,7 +90,8 @@ def _build_data(size, idx, count_table, l, G,
 
     write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table,
-               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau))
+               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau),
+               data_tau)
 
 
 def build_data(G, essential_genes, nonessential_genes, size, data_tau):
@@ -150,9 +151,9 @@ def run():
         G = G.copy()
 
         if size == "small":
-            essential_genes = np.array(["POLR1B"])
-            nonessential_genes = np.array(["PSMBC"])
-            G.add_edge('PSMBC', 'POLR1B')
+            essential_genes = np.array(mod_genes[0])
+            nonessential_genes = np.array(mod_genes[1])
+            G.add_edge(mod_genes[0], mod_genes[1])
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
 

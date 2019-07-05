@@ -26,7 +26,7 @@ class BinaryMRF(CategoricalMRF):
 
     def _log_node_potentials(self, gamma, mu, tau):
         loglik = self._loglik(gamma, mu, tau)
-        return loglik[:, ESSENTIAL] - loglik[:, NON_ESSENTIAL]
+        return loglik[:, 1] - loglik[:, 0]
 
     def _gibbs(self, idx, point, node_potentials=None):
         node_pot = self._log_node_potential(node_potentials, idx)
@@ -42,8 +42,8 @@ class BinaryMRF(CategoricalMRF):
         mb = self._markov_blank(idx)
         point_label, blanket_labs = point[idx], point[mb]
         mb_weights = self._adj[mb, idx]
-        s1 = numpy.sum((blanket_labs == ESSENTIAL) * mb_weights)
-        s2 = numpy.sum((blanket_labs != ESSENTIAL) * mb_weights)
+        s1 = numpy.sum((blanket_labs == 1) * mb_weights)
+        s2 = numpy.sum((blanket_labs != 1) * mb_weights)
         return s1 - s2
 
     def _markov_blank(self, idx):
@@ -57,12 +57,12 @@ class BinaryMRF(CategoricalMRF):
 
     def _loglik(self, gamma, mu, tau):
         if len(tau) == 2:
-            tau_0, tau_1 = tau[NON_ESSENTIAL], tau[ESSENTIAL]
+            tau_0, tau_1 = tau[0], tau[1]
         else:
             tau_0, tau_1 = tau, tau
-        non = scipy.log(scipy.stats.norm.pdf(gamma, mu[NON_ESSENTIAL], tau_0))
-        ess = scipy.log(scipy.stats.norm.pdf(gamma, mu[ESSENTIAL], tau_1))
-        return scipy.column_stack((non, ess))
+        a0 = scipy.log(scipy.stats.norm.pdf(gamma, mu[0], tau_0))
+        a1 = scipy.log(scipy.stats.norm.pdf(gamma, mu[1], tau_1))
+        return scipy.column_stack((a0, a1))
 
     def _repr_latex_(self, name=None, dist=None):
         name = r'\text{%s}' % name

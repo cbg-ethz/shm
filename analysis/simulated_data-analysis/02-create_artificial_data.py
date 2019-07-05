@@ -4,6 +4,7 @@ import os
 import pickle
 
 import click
+import networkx
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -133,6 +134,11 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
           size, idx, count_table, l, G,
           genes, gamma_essential, gamma_nonessential, gamma, beta, data_tau)
 
+
+def read_graph(graph_file):
+    G = networkx.read_weighted_edgelist(
+        graph_file, delimiter="\t", comments="from")
+    return G
 
 @click.command()
 def run():

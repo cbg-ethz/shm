@@ -130,7 +130,7 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
 
     for idx in [0, 2, 5, 7, 10]:
-        if size == "small" and idx > 2 and data_tau >= .2:
+        if size == "small" and idx > 2:
             continue
         _build_data(
           size, idx, count_table, l, G,
@@ -151,8 +151,8 @@ def run():
         G = G.copy()
 
         if size == "small":
-            essential_genes = np.array(mod_genes[0])
-            nonessential_genes = np.array(mod_genes[1])
+            essential_genes = np.array([mod_genes[0]])
+            nonessential_genes = np.array([mod_genes[1]])
             G.add_edge(mod_genes[0], mod_genes[1])
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))

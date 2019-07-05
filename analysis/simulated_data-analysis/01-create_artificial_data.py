@@ -14,7 +14,6 @@ outpath = os.path.join("..", "..", "data_raw")
 gamma_tau = .25
 beta_tau = .25
 l_tau = .25
-data_tau = .1
 gamma_tau_non_essential = .25
 n_conditions, n_sgrnas, n_replicates = 2, 5, 10
 
@@ -67,7 +66,9 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
 
 
 def _build_data(size, idx, count_table, l, G,
-                genes, gamma_essential, gamma_nonessential, gamma, beta):
+                genes, gamma_essential, gamma_nonessential, gamma,
+                beta, data_tau):
+
     count_table = count_table.copy()
     polr1b_idx = np.where(count_table['gene'] == 'POLR1B')[0][:idx * n_replicates]
     psmb1_idx = np.where(count_table['gene'] == 'PSMB1')[0][:idx * n_replicates]
@@ -75,10 +76,10 @@ def _build_data(size, idx, count_table, l, G,
     count_table["affinity"] = 1
     count_table["affinity"][polr1b_idx] = .1
     count_table["affinity"][psmb1_idx] = .1
-    count_table["l"] = 0# l[count_table["intervention"]]
+    count_table["iota"] = l[count_table["intervention"]]
 
     count_table["readout"] = st.norm.rvs(
-      count_table["l"] +
+      count_table["iota"] +
       count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
       data_tau)
 
@@ -86,10 +87,11 @@ def _build_data(size, idx, count_table, l, G,
         ["S" + str(i) for i in count_table["intervention"]]
 
     write_file(G, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, count_table, "{}-{}_modified_grnas".format(size, idx))
+               gamma, beta, l, count_table,
+               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau))
 
 
-def build_data(G, essential_genes, nonessential_genes, size):
+def build_data(G, essential_genes, nonessential_genes, size, data_tau):
     genes = np.append(essential_genes, nonessential_genes)
     n_genes = len(genes)
     n_essential = len(essential_genes)
@@ -125,10 +127,11 @@ def build_data(G, essential_genes, nonessential_genes, size):
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
 
     for idx in [0, 2, 5, 7, 10]:
-        if size == "small" and idx > 2:
+        if size == "small" and idx > 2 and data_tau >= .2:
             continue
-        _build_data(size, idx, count_table, l, G,
-                    genes, gamma_essential, gamma_nonessential, gamma, beta)
+        _build_data(
+          size, idx, count_table, l, G,
+          genes, gamma_essential, gamma_nonessential, gamma, beta, data_tau)
 
 
 @click.command()
@@ -151,7 +154,8 @@ def run():
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
 
-        build_data(G, essential_genes, nonessential_genes, size)
+        for data_tau in [.1, .2, .5, 1]:
+            build_data(G, essential_genes, nonessential_genes, size, data_tau)
 
 
 if __name__ == "__main__":

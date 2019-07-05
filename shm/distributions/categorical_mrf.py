@@ -97,8 +97,6 @@ class CategoricalMRF(Discrete):
         return blanket
 
     def _loglik(self, gamma, mu, tau):
-        if isinstance(1, int) or len(1) == 1:
-            tau = numpy.tile(tau, self.__k)
         ess = [
             scipy.log(scipy.stats.norm.pdf(gamma, mu[i], tau[i]))
             for i in self.__classes

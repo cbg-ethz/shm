@@ -46,22 +46,9 @@ class BinaryMRF(CategoricalMRF):
         s2 = numpy.sum((blanket_labs != 1) * mb_weights)
         return s1 - s2
 
-    def _markov_blank(self, idx):
-        if idx in self.__blanket:
-            return self.__blanket[idx]
-        children = numpy.where(self._adj[idx, :] != 0)[0]
-        parents = numpy.where(self._adj[:, idx] != 0)[0]
-        blanket = numpy.unique(numpy.append(children, parents))
-        self.__blanket[idx] = blanket
-        return blanket
-
     def _loglik(self, gamma, mu, tau):
-        if len(tau) == 2:
-            tau_0, tau_1 = tau[0], tau[1]
-        else:
-            tau_0, tau_1 = tau, tau
-        a0 = scipy.log(scipy.stats.norm.pdf(gamma, mu[0], tau_0))
-        a1 = scipy.log(scipy.stats.norm.pdf(gamma, mu[1], tau_1))
+        a0 = scipy.log(scipy.stats.norm.pdf(gamma, mu[0], tau[0]))
+        a1 = scipy.log(scipy.stats.norm.pdf(gamma, mu[1], tau[1]))
         return scipy.column_stack((a0, a1))
 
     def _repr_latex_(self, name=None, dist=None):

@@ -6,16 +6,19 @@ function submit_run {
     do
         for j in "0_modified_grnas" "2_modified_grnas" "7_modified_grnas" "10_modified_grnas"
         do
-            for k in ".1" ".2" ".5" "1"
+            for k in "noise_sd_0.1" "noise_sd_0.2" "noise_sd_0.5" "noise_sd_1"
             do
-                bsub -W 4:00 -n 1 -R "rusage[mem=25000]" python 02-run_shm.py sample \
-                    ../../data_raw/${j}-simulated_data.tsv \
-                    "/cluster/home/simondi/simondi/data/shm/${i}_model-${j}" \
-                    ../../data_raw/${j}-graph.pickle \
-                    --family gaussian \
-                    --ntune 100000 \
-                    --ndraw 10000 \
-                    --model ${i}
+                for f in {1..10}
+                do
+                    echo -W 4:00 -n 1 -R "rusage[mem=25000]" python 02-run_shm.py \
+                        ${f} \
+                        ../../data_raw/simulated-large-${j}-${k}-simulated_data.tsv \
+                        "/cluster/home/simondi/simondi/data/shm/${i}_model-${j}-${k}-fold_${f}" \
+                        ../../data_raw/simulated-large-${j}-${k}-graph.pickle \
+                        --ntune 20000 \
+                        --ndraw 10000 \
+                        --model ${i}
+                done
             done
          done
     done

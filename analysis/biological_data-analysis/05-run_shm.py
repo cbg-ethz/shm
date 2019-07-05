@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import datetime
 import logging
 import os
@@ -9,6 +10,7 @@ import click
 import numpy
 import pandas as pd
 import pymc3 as pm
+from pymc3 import model_to_graphviz
 
 from analysis.copynumber_shlm import CopynumberSHLM
 from shm.globals import READOUT, INTERVENTION, CONDITION, GENE, REPLICATE, \
@@ -20,7 +22,6 @@ logger.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 logger.addHandler(logging.StreamHandler())
-
 
 
 def _load_data(infile):
@@ -76,7 +77,10 @@ def sample(data_tsv, graph_pickle, outfolder, model, ntune, ndraw, nchain):
                         use_affinity=True) as model:
         trace = model.sample(draws=ndraw, tune=ntune, chains=nchain, seed=23)
 
+    graphviz = model_to_graphviz(model.model)
+    graphviz.render(filename=outfile + "_model", format="png")
     pm.save_trace(trace, outfile + "_trace", overwrite=True)
+
 
 if __name__ == "__main__":
     sample()

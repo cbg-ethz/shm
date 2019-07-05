@@ -17,6 +17,7 @@ beta_tau = .25
 l_tau = .25
 gamma_tau_non_essential = .25
 n_conditions, n_sgrnas, n_replicates = 2, 5, 10
+mod_genes = ["POLR2D", "PSMC1"]
 
 
 def read_graph(infile):
@@ -135,18 +136,13 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
           genes, gamma_essential, gamma_nonessential, gamma, beta, data_tau)
 
 
-def read_graph(graph_file):
-    G = networkx.read_weighted_edgelist(
-        graph_file, delimiter="\t", comments="from")
-    return G
-
 @click.command()
 def run():
     for size in ["small", "large"]:
         essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
                                   "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
 
-        G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
+        G = read_graph("../../../../data_raw/simulated_full_graph2.pickle")
         nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
         np.random.seed(23)
         nonessential_genes = list(np.random.choice(nonessential_genes, 21))
@@ -155,8 +151,8 @@ def run():
 
         if size == "small":
             essential_genes = np.array(["POLR1B"])
-            nonessential_genes = np.array(["PSMB1"])
-            G.add_edge('PSMB1', 'POLR1B')
+            nonessential_genes = np.array(["PSMBC"])
+            G.add_edge('PSMBC', 'POLR1B')
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
 

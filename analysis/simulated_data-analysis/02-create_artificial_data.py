@@ -38,11 +38,11 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
 def write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table, suffix, data_tau):
     count_table.to_csv(
-      os.path.join(outpath, "simulated_binary-{}-simulated_data.tsv".format(suffix)),
+      os.path.join(outpath, "simulated-{}-simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
 
     with open(
-      os.path.join(outpath, "simulated_binary-{}-graph.pickle".format(suffix)), "wb") as out:
+      os.path.join(outpath, "simulated-{}-graph.pickle".format(suffix)), "wb") as out:
         pickle.dump(G.subgraph(genes), out)
 
     data = {
@@ -62,7 +62,7 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
         "data_tau": data_tau,
         "count_table": count_table
     }
-    picklepath = os.path.join(outpath, "simulated_binary-{}-data.pickle".format(suffix))
+    picklepath = os.path.join(outpath, "simulated-{}-data.pickle".format(suffix))
     with open(picklepath, "wb") as out:
         pickle.dump(data, out)
 
@@ -130,7 +130,7 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
 
     for idx in [0, 2, 5, 7, 10]:
-        if size == "small" and idx > 2:
+        if size == "small" and idx != 2:
             continue
         _build_data(
           size, idx, count_table, l, G,

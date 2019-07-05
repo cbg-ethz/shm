@@ -29,6 +29,11 @@ class SHLM(SHM):
                  graph=None,
                  sampler="nuts"):
         self._data = data
+        self.tau_g_alpha = 2
+        self.tau_b_alpha = 2
+        self.tau_iota_alpha = 2
+        self.kappa_sd = 1
+        self.sd_alpha = 2
 
         self._set_link(link_function)
         self._set_family(family)
@@ -44,11 +49,6 @@ class SHLM(SHM):
             if not sp.array_equal(d_genes, self.node_labels):
                 raise ValueError("Graph nodes != data genes")
 
-        self.tau_g_alpha = 2
-        self.tau_b_alpha = 2
-        self.tau_iota_alpha = 2
-        self.kappa_sd = 1
-        self.sd_alpha = 2
 
 
     @property

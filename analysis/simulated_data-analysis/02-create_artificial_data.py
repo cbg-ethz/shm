@@ -86,7 +86,8 @@ def _build_data(size, idx, count_table, l, G,
       data_tau)
 
     count_table["intervention"] = \
-        ["S" + str(i) for i in count_table["intervention"]]
+        [e + "-I" + str(i) for e, i in zip(count_table["condition"],
+                                          count_table["intervention"])]
 
     write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table,
@@ -113,8 +114,9 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
 
     count_table = pd.DataFrame(
       combinations, columns=["gene", "condition", "intervention", "replicate"])
-    count_table.intervention = np.repeat(
-      [i for i in range(n_conditions * n_sgrnas * n_genes)], n_replicates)
+    count_table.intervention = np.tile(
+      np.repeat([i for i in range(n_sgrnas)], n_replicates),
+      n_conditions * n_genes)
     gene_condition_ids = np.array(
       ["{}-{}".format(g, c) for g, c in
        zip(count_table.gene, count_table.condition)])

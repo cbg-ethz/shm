@@ -83,7 +83,7 @@ def _build_data(size, idx, count_table, l, G,
     count_table["readout"] = st.norm.rvs(
       count_table["iota"] +
       count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
-      data_tau)
+      data_tau[1])
 
     count_table["intervention"] = \
         [e + "-I" + str(i) for e, i in zip(count_table["condition"],
@@ -91,7 +91,7 @@ def _build_data(size, idx, count_table, l, G,
 
     write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table,
-               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau),
+               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau[0]),
                data_tau)
 
 
@@ -132,7 +132,7 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
     l = st.norm.rvs(0, l_tau, size=n_conditions * n_genes * n_sgrnas)
 
     for idx in [0, 2, 5, 7, 10]:
-        if size == "small" and idx != 2:
+        if size == "small" and idx != 2 and data_tau[0] != "low":
             continue
         _build_data(
           size, idx, count_table, l, G,
@@ -159,7 +159,7 @@ def run():
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
 
-        for data_tau in [.1, .2, .5, 1]:
+        for data_tau in {"low": .1, "middle": .2, "high": .3}.items():
             build_data(G, essential_genes, nonessential_genes, size, data_tau)
 
 

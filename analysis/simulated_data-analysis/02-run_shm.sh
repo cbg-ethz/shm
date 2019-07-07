@@ -13,7 +13,7 @@ function submit_run {
                     echo -W 4:00 -n 1 -R "rusage[mem=25000]" python 02-run_shm.py \
                         ${f} \
                         ../../data_raw/simulated-large-${j}-${k}-simulated_data.tsv \
-                        "/cluster/home/simondi/simondi/data/shm/${i}_model-${j}-${k}-fold_${f}" \
+                        "/cluster/home/simondi/simondi/data/shm/simulated_data/${i}_model-${j}-${k}-fold_${f}" \
                         ../../data_raw/simulated-large-${j}-${k}-graph.pickle \
                         --ntune 20000 \
                         --ndraw 10000 \

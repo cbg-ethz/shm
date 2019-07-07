@@ -37,7 +37,7 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
 
 def write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table, suffix, data_tau):
-    count_table.to_csv(
+    count_table.sort_values(["gene", "condition", "intervention", "replicate"]).to_csv(
       os.path.join(outpath, "simulated-{}-simulated_data.tsv".format(suffix)),
       index=False, sep="\t")
 

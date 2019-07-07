@@ -5,7 +5,6 @@ import scipy
 import scipy.stats
 
 from shm.distributions.categorical_mrf import CategoricalMRF
-from shm.globals import ESSENTIAL, NON_ESSENTIAL
 
 
 class BinaryMRF(CategoricalMRF):
@@ -14,7 +13,7 @@ class BinaryMRF(CategoricalMRF):
     def __init__(self, G: networkx.Graph, *args, **kwargs):
         super(BinaryMRF, self).__init__(G=G, k=2, *args, **kwargs)
 
-        self.mode = scipy.repeat(NON_ESSENTIAL, self.n_nodes)
+        self.mode = scipy.repeat(0, self.n_nodes)
         self.__choice = scipy.stats.bernoulli.rvs
         self.__classes = numpy.arange(2)
         self.__point = scipy.stats.bernoulli.rvs(0.5, size=self.n_nodes)
@@ -43,8 +42,8 @@ class BinaryMRF(CategoricalMRF):
         point_label, blanket_labs = point[idx], point[mb]
         mb_weights = self._adj[mb, idx]
         s1 = numpy.sum((blanket_labs == 1) * mb_weights)
-        s2 = numpy.sum((blanket_labs != 1) * mb_weights)
-        return s1 - s2
+        s0 = numpy.sum((blanket_labs == 0) * mb_weights)
+        return s1 - s0
 
     def _loglik(self, gamma, mu, tau):
         a0 = scipy.log(scipy.stats.norm.pdf(gamma, mu[0], tau[0]))

@@ -48,8 +48,6 @@ class SHLM(SHM):
             if not sp.array_equal(d_genes, self.node_labels):
                 raise ValueError("Graph nodes != data genes")
 
-
-
     @property
     def data(self):
         return self._data

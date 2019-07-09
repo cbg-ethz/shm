@@ -29,10 +29,10 @@ class SHLM(SHM):
                  graph=None,
                  sampler="nuts"):
         self._data = data
-        self.tau_g_alpha = 2
-        self.tau_b_alpha = 2
-        self.tau_iota_alpha = 2
-        self.sd_alpha = 2
+        self.tau_g_alpha = 3
+        self.tau_b_alpha = 3
+        self.tau_iota_alpha = 3
+        self.sd_alpha = 3
 
         self._set_link(link_function)
         self._set_family(family)
@@ -138,11 +138,14 @@ class SHLM(SHM):
     def _hlm(self, model, gamma):
         with model:
             logger.info("Using tau_b_alpha: {}".format(self.tau_b_alpha))
-            tau_b = pm.InverseGamma("tau_b", alpha=self.tau_b_alpha, beta=1., shape=1)
+            tau_b = pm.InverseGamma("tau_b", alpha=self.tau_b_alpha,
+                                    beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
             logger.info("Using tau_iota_alpha: {}".format(self.tau_iota_alpha))
-            l_tau = pm.InverseGamma("tau_iota", alpha=self.tau_iota_alpha, beta=1., shape=1)
+            l_tau = pm.InverseGamma("tau_iota",
+                                    alpha=self.tau_iota_alpha,
+                                    beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
 
             mu = (gamma[self._gene_data_idx] +

@@ -80,7 +80,6 @@ def _plot_posterior_labels(trace, model, out_dir):
     ]
 
     gamma_pred_mean2 = numpy.mean(trace['gamma'], 0)[list(model._index_to_gene.keys())]
-
     if 'z' in trace.varnames:
         probs = compute_posterior_probabilities(trace)
         df = pd.DataFrame(

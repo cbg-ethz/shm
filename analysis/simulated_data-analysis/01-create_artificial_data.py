@@ -35,7 +35,8 @@ def get_gamma(n_essential, n_nonessential, gamma_tau, gamma_tau_non_essential):
     return gamma, gamma_essential, gamma_nonessential
 
 
-def write_file(G, genes, gamma_essential, gamma_nonessential,
+def write_file(G, genes, essential_genes, nonessential_genes,
+               gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table, suffix, data_tau):
     count_table.sort_values(["gene", "condition", "intervention", "replicate"]).to_csv(
       os.path.join(outpath, "simulated-{}-simulated_data.tsv".format(suffix)),
@@ -48,8 +49,8 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
     data = {
         "graph": G.subgraph(genes),
         "genes": genes,
-        "essential_genes": genes[:len(gamma_essential)],
-        "nonessential_genes": genes[len(gamma_essential):],
+        "essential_genes": essential_genes,
+        "nonessential_genes": nonessential_genes,
         "gamma_tau": gamma_tau,
         "gamma_tau_non_essential": gamma_tau_non_essential,
         "gamma_essential": gamma_essential,
@@ -68,7 +69,8 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
 
 
 def _build_data(size, idx, count_table, l, G,
-                genes, gamma_essential, gamma_nonessential, gamma,
+                genes, essential_genes, nonessential_genes,
+                gamma_essential, gamma_nonessential, gamma,
                 beta, data_tau, is_test):
 
     count_table = count_table.copy()
@@ -101,7 +103,8 @@ def _build_data(size, idx, count_table, l, G,
     if is_test:
         suf = "test"
 
-    write_file(G, genes, gamma_essential, gamma_nonessential,
+    write_file(G, genes, essential_genes, nonessential_genes,
+               gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table,
                suf, data_tau)
 
@@ -147,12 +150,13 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau, is_test):
             continue
         _build_data(
           size, idx, count_table, l, G,
-          genes, gamma_essential, gamma_nonessential,
+          genes, essential_genes, nonessential_genes,
+          gamma_essential, gamma_nonessential,
           gamma, beta, data_tau, is_test)
 
 
 @click.command()
-@click.option("test", is_flag=True)
+@click.option("--test", is_flag=True)
 def run(test):
     G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
     essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',

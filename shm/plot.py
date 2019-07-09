@@ -269,20 +269,25 @@ def plot_forest(trace, variable, var_name=None):
     return fig, ax
 
 
-def plot_posterior_labels(trace, genes):
-    probs = compute_posterior_probabilities(trace)
+def plot_posterior_labels(trace, genes, nstates=2):
+    if nstates not in [2, 3]:
+        raise ValueError("nstates needs to be in {2, 3}")
 
+    probs = compute_posterior_probabilities(trace, nstates)
     bars = np.add(probs[:, 0], probs[:, 1]).tolist()
     pos = numpy.arange(probs.shape[0])
     barWidth = .5
 
     fig, ax = plt.subplots()
+
     ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black',
             width=barWidth, label="Dependency factor")
     ax.bar(pos, probs[:, 1], bottom=probs[:, 0], color='lightgrey',
             edgecolor='black', width=barWidth, label="Neutral")
-    ax.bar(pos, probs[:, 2], bottom=bars, color='#316675', edgecolor='black',
-            width=barWidth, label="Restriction factor")
+    if nstates == 3:
+        ax.bar(pos, probs[:, 2], bottom=bars,
+               color='#316675', edgecolor='black',
+               width=barWidth, label="Restriction factor")
     ax.set_facecolor('white')
     plt.tick_params('both', left=True)
     plt.ylim([-0.05, 1.05])

@@ -8,7 +8,7 @@ import theano.tensor as tt
 from shm.family import Family
 from shm.globals import READOUT, AFFINITY, COPYNUMBER
 from shm.link import Link
-from analysis.shlm import SHLM
+from examples.shlm import SHLM
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,7 +26,6 @@ class CopynumberSHLM(SHLM):
                  sampler="nuts",
                  use_affinity=False):
         self._use_affinity = use_affinity
-        self.kappa_sd = 1
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
@@ -34,6 +33,26 @@ class CopynumberSHLM(SHLM):
                          n_states=n_states,
                          graph=graph,
                          sampler=sampler)
+
+    @property
+    def tau_g_alpha(self):
+        return 3
+
+    @property
+    def tau_b_alpha(self):
+        return 3
+
+    @property
+    def tau_iota_alpha(self):
+        return 3
+
+    @property
+    def tau_sd_alpha(self):
+        return 3
+
+    @property
+    def kappa_sd_alpha(self):
+        return 1
 
     def _gamma_mix(self, model, z):
         with model:
@@ -63,11 +82,13 @@ class CopynumberSHLM(SHLM):
     def _hlm(self, model, gamma):
         with model:
             logger.info("Using tau_b_alpha: {}".format(self.tau_b_alpha))
-            tau_b = pm.InverseGamma("tau_b", alpha=self.tau_b_alpha, beta=1., shape=1)
+            tau_b = pm.InverseGamma(
+              "tau_b", alpha=self.tau_b_alpha, beta=1., shape=1)
             beta = pm.Normal("beta", 0, sd=tau_b, shape=self.n_gene_condition)
 
             logger.info("Using tau_iota_alpha: {}".format(self.tau_iota_alpha))
-            l_tau = pm.InverseGamma("tau_iota", alpha=self.tau_iota_alpha, beta=1., shape=1)
+            l_tau = pm.InverseGamma(
+              "tau_iota", alpha=self.tau_iota_alpha, beta=1., shape=1)
             l = pm.Normal("iota", mu=0, sd=l_tau, shape=self.n_interventions)
 
             logger.info("Using kappa_sd: {}".format(self.kappa_sd))

@@ -29,10 +29,6 @@ class SHLM(SHM):
                  graph=None,
                  sampler="nuts"):
         self._data = data
-        self.tau_g_alpha = 3
-        self.tau_b_alpha = 3
-        self.tau_iota_alpha = 3
-        self.sd_alpha = 3
 
         self._set_link(link_function)
         self._set_family(family)
@@ -47,6 +43,22 @@ class SHLM(SHM):
             d_genes = sp.sort(sp.unique(self._data.gene.values))
             if not sp.array_equal(d_genes, self.node_labels):
                 raise ValueError("Graph nodes != data genes")
+
+    @property
+    def tau_g_alpha(self):
+        return 3
+
+    @property
+    def tau_b_alpha(self):
+        return 3
+
+    @property
+    def tau_iota_alpha(self):
+        return 3
+
+    @property
+    def sd_alpha(self):
+        return 3
 
     @property
     def data(self):
@@ -73,10 +85,10 @@ class SHLM(SHM):
     def _set_mrf_model(self):
         with pm.Model() as model:
             if self.n_states == 2:
-                logger.info("Using binary MRF")
+                logger.info("Using binary-MRF")
                 z = BinaryMRF('z', G=self.graph)
             else:
-                logger.info("Using categorical MRF with three states")
+                logger.info("Using categorical-MRF with three states")
                 z = CategoricalMRF('z', G=self.graph, k=3)
         tau_g, mean_g, gamma = self._gamma_mix(model, z)
         param_hlm = self._hlm(model, gamma)
@@ -120,8 +132,7 @@ class SHLM(SHM):
                 mean_g = pm.Normal(
                   "mu_g", mu=np.array([-1., 0.]), sd=1, shape=self.n_states)
                 pm.Potential(
-                  "m_opot",
-                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
+                  "m_opot", var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
             else:
                 logger.info("Building three-state model")
                 mean_g = pm.Normal(

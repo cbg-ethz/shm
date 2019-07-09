@@ -33,9 +33,11 @@ class SHM(ABC):
         self._set_model(model)
 
     def __enter__(self):
+        # TODO implement context manager to be more pymc like
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
+        # nth do be done here i think
         pass
 
     def sample(self, draws=1000, tune=1000, chains=None, seed=23):

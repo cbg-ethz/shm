@@ -43,7 +43,7 @@ class BinaryMRF(CategoricalMRF):
         mb_weights = self._adj[mb, idx]
         s1 = numpy.sum((blanket_labs == 1) * mb_weights)
         s0 = numpy.sum((blanket_labs == 0) * mb_weights)
-        return s1 - s0
+        return self._edge_correction(s1 - s0)
 
     def _loglik(self, gamma, mu, tau):
         a0 = scipy.log(scipy.stats.norm.pdf(gamma, mu[0], tau[0]))

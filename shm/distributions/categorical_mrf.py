@@ -1,3 +1,5 @@
+import logging
+
 import scipy
 import scipy.stats
 
@@ -6,10 +8,15 @@ import numpy
 from pymc3 import Discrete
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+
+
 class CategoricalMRF(Discrete):
     NAME = "CategoricalMRF"
 
-    def __init__(self, G: networkx.Graph, k: int, *args, **kwargs):
+    def __init__(self, G: networkx.Graph, k: int, beta=1, *args, **kwargs):
         self.__node_labels = numpy.sort(G.nodes())
         self.__n = len(self.__node_labels)
         self.__k = k
@@ -23,6 +30,9 @@ class CategoricalMRF(Discrete):
         self.__classes = numpy.arange(k)
         self.__point = self.__choice(self.__classes, size=self.__n)
         self.__blanket = {}
+
+        logger.info("Using MRF edge correction:{}".format(beta))
+        self._beta = beta
 
     @property
     def name(self):
@@ -85,7 +95,10 @@ class CategoricalMRF(Discrete):
             numpy.sum((blanket_labs == i) * mb_weights)
             for i in self.__classes
         ]
-        return potentials
+        return self._edge_correction(potentials)
+
+    def _edge_correction(self, val):
+        return self._beta * val
 
     def _markov_blank(self, idx):
         if idx in self.__blanket:

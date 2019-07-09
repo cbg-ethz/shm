@@ -40,7 +40,7 @@ class SHM(ABC):
 
     def sample(self, draws=1000, tune=1000, chains=None, seed=23):
         with self.model:
-            logger.info("Sampling {}/{} times".format(draws, tune))
+            logger.info("Sampling tune:{}/draw:{} times".format(tune, draws))
             trace = pm.sample(
               draws=draws, tune=tune, chains=chains, cores=1,
               step=self._steps, random_seed=seed, progressbar=False)

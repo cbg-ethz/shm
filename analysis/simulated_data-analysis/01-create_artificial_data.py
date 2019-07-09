@@ -69,21 +69,26 @@ def write_file(G, genes, gamma_essential, gamma_nonessential,
 
 def _build_data(size, idx, count_table, l, G,
                 genes, gamma_essential, gamma_nonessential, gamma,
-                beta, data_tau):
+                beta, data_tau, is_test):
 
     count_table = count_table.copy()
-    pol_idx = np.where(count_table['gene'] == mod_genes[0])[0][:idx * n_replicates]
-    psm_idx = np.where(count_table['gene'] == mod_genes[1])[0][:idx * n_replicates]
+    pol_idx = np.where(count_table['gene'] ==
+                       mod_genes[0])[0][:idx * n_replicates]
+    psm_idx = np.where(count_table['gene'] ==
+                       mod_genes[1])[0][:idx * n_replicates]
 
     count_table["affinity"] = 1
     count_table["affinity"][pol_idx] = .1
     count_table["affinity"][psm_idx] = .1
     count_table["iota"] = l[count_table["intervention"]]
+    if is_test:
+        count_table["iota"] = 0
+        count_table["affinity"] = 1
 
     count_table["readout"] = st.norm.rvs(
       count_table["iota"] +
       count_table["affinity"] * (count_table["beta"] + count_table["gamma"]),
-      data_tau[1])
+      .1)
 
     count_table["intervention"] = \
         [e + "-I" + str(i) for e, i in zip(count_table["condition"],
@@ -92,10 +97,10 @@ def _build_data(size, idx, count_table, l, G,
     write_file(G, genes, gamma_essential, gamma_nonessential,
                gamma, beta, l, count_table,
                "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau[0]),
-               data_tau)
+               data_tau, is_test)
 
 
-def build_data(G, essential_genes, nonessential_genes, size, data_tau):
+def build_data(G, essential_genes, nonessential_genes, size, data_tau, is_test):
     genes = np.append(essential_genes, nonessential_genes)
     n_genes = len(genes)
     n_essential = len(essential_genes)
@@ -136,31 +141,34 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau):
             continue
         _build_data(
           size, idx, count_table, l, G,
-          genes, gamma_essential, gamma_nonessential, gamma, beta, data_tau)
+          genes, gamma_essential, gamma_nonessential,
+          gamma, beta, data_tau, is_test)
 
 
 @click.command()
-def run():
+@click.option("test", is_flag=True)
+def run(test):
+    G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
+    essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
+                              "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
+    nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
+    np.random.seed(23)
+    nonessential_genes = list(np.random.choice(nonessential_genes, 21))
+    G = G.subgraph(essential_genes + nonessential_genes)
+    G = G.copy()
+
     for size in ["small", "large"]:
-        essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',
-                                  "PSMC1", "PSMD4", 'PSMC5', 'PSMB1', 'PSMC3'])
-
-        G = read_graph("../../../../data_raw/simulated_full_graph2.pickle")
-        nonessential_genes = np.setdiff1d(G.nodes(), essential_genes)
-        np.random.seed(23)
-        nonessential_genes = list(np.random.choice(nonessential_genes, 21))
-        G = G.subgraph(essential_genes + nonessential_genes)
-        G = G.copy()
-
         if size == "small":
             essential_genes = np.array([mod_genes[0]])
             nonessential_genes = np.array([mod_genes[1]])
             G.add_edge(mod_genes[0], mod_genes[1])
         filter_genes = np.append(essential_genes, nonessential_genes)
         G = G.subgraph(np.sort(filter_genes))
-
         for data_tau in {"low": .1, "middle": .2, "high": .3}.items():
-            build_data(G, essential_genes, nonessential_genes, size, data_tau)
+            build_data(G, essential_genes, nonessential_genes,
+                       size, data_tau, test)
+            if test:
+                return
 
 
 if __name__ == "__main__":

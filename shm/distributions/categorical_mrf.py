@@ -31,7 +31,7 @@ class CategoricalMRF(Discrete):
         self.__point = self.__choice(self.__classes, size=self.__n)
         self.__blanket = {}
 
-        logger.info("Using MRF edge correction:{}".format(beta))
+        logger.info("Using MRF edge correction: {}".format(beta))
         self._beta = beta
 
     @property

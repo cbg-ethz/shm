@@ -94,10 +94,11 @@ def _build_data(size, idx, count_table, l, G,
         [e + "-I" + str(i) for e, i in zip(count_table["condition"],
                                           count_table["intervention"])]
 
+    suf = "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau[0])
+    if is_test:
+        suf = "test"
     write_file(G, genes, gamma_essential, gamma_nonessential,
-               gamma, beta, l, count_table,
-               "{}-{}_modified_grnas-noise_sd_{}".format(size, idx, data_tau[0]),
-               data_tau, is_test)
+               gamma, beta, l, count_table, suf, data_tau)
 
 
 def build_data(G, essential_genes, nonessential_genes, size, data_tau, is_test):
@@ -146,7 +147,7 @@ def build_data(G, essential_genes, nonessential_genes, size, data_tau, is_test):
 
 
 @click.command()
-@click.option("test", is_flag=True)
+@click.option("--test", is_flag=True)
 def run(test):
     G = read_graph("../../../../data_raw/simulated_full_graph.pickle")
     essential_genes = sorted(["POLR2C", "POLR1B", "POLR2D", 'POLR3K',

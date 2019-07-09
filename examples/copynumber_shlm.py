@@ -51,7 +51,7 @@ class CopynumberSHLM(SHLM):
         return 3
 
     @property
-    def kappa_sd_alpha(self):
+    def kappa_sd(self):
         return 1
 
     def _gamma_mix(self, model, z):
@@ -59,6 +59,7 @@ class CopynumberSHLM(SHLM):
             logger.info("Using tau_g_alpha: {}".format(self.tau_g_alpha))
             tau_g = pm.InverseGamma(
               "tau_g", alpha=self.tau_g_alpha, beta=1., shape=self.n_states)
+
             if self.n_states == 2:
                 logger.info("Building two-state model")
                 mean_g = pm.Normal(

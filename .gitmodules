@@ -1,0 +1,3 @@
+[submodule "shm_analysis"]
+	path = shm_analysis
+	url = git@github.com:dirmeier/shm_analysis.git

@@ -51,7 +51,8 @@ def _read_graph(infile, data):
 @click.argument("graph_pickle", type=str)
 @click.argument("outfile", type=str)
 @click.option('--model',
-              type=click.Choice(["mrf", "clustering"]), default="clustering")
+              type=click.Choice(["mrf", "clustering", "simple"]),
+              default="clustering")
 @click.option("--ntune", type=int, default=50)
 @click.option("--ndraw", type=int, default=100)
 @click.option("--nchain", type=int, default=4)

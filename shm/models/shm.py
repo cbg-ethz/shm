@@ -91,6 +91,9 @@ class SHM(ABC):
         elif model == Model.clustering:
             logger.info("Building cluster hierarchical model")
             return self._set_clustering_model()
+        elif model == Model.simple:
+            logger.info("Building simple hierarchical model")
+            self._set_simple_model()
         raise ValueError("Model not supported")
 
     def _set_steps(self, model, z, *params):

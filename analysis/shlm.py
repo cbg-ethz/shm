@@ -97,6 +97,18 @@ class SHLM(SHM):
         self._set_steps(model, z, p, tau_g, mean_g, gamma, *param_hlm)
         return self
 
+    def _set_simple_model(self):
+        with pm.Model() as model:
+            logger.info("Using tau_g_alpha: {}".format(self.tau_g_alpha))
+            tau_g = pm.InverseGamma(
+              "tau_g", alpha=self.tau_g_alpha, beta=1., shape=1)
+            mean_g = pm.Normal("mu_g", mu=0, sd=1, shape=1)
+            gamma = pm.Normal("gamma", mean_g, tau_g, shape=self.n_genes)
+        param_hlm = self._hlm(model, gamma)
+
+        self._set_steps(model, None, tau_g, mean_g, gamma, *param_hlm)
+        return self
+
     def _gamma_mix(self, model, z):
         with model:
             logger.info("Using tau_g_alpha: {}".format(self.tau_g_alpha))

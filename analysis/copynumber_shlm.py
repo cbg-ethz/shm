@@ -26,11 +26,7 @@ class CopynumberSHLM(SHLM):
                  sampler="nuts",
                  use_affinity=False):
         self._use_affinity = use_affinity
-        self.tau_g_alpha = 2
-        self.tau_b_alpha = 2
-        self.tau_iota_alpha = 2
         self.kappa_sd = 1
-        self.sd_alpha = 2
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,

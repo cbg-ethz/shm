@@ -41,10 +41,6 @@ def _plot_network(graph, data, out_dir):
       nodelist=list(data['essential_genes']), node_size=300,
       node_color='#316675', font_size=15, alpha=.9, label="Essential genes")
     networkx.draw_networkx_nodes(
-      data["graph"].subgraph(["POLR2D", "PSMC1"]), pos=pos,
-      nodelist=list(["POLR2D", "PSMC1"]), node_size=300,
-      node_color='black', font_size=15, alpha=.9)
-    networkx.draw_networkx_nodes(
       data["graph"], pos=pos,
       nodelist=list(data['nonessential_genes']), node_size=300,
       node_color='black', font_size=15, alpha=.9, label="Non-essential genes")

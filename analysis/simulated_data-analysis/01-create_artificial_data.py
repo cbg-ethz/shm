@@ -86,7 +86,6 @@ def _build_data(size, idx, count_table, l, G,
 
     noise = data_tau[1]
     if is_test:
-        count_table["iota"] = 0
         count_table["affinity"] = 1
         noise = .1
 

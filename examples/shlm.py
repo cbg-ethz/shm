@@ -46,19 +46,25 @@ class SHLM(SHM):
 
     @property
     def tau_g_alpha(self):
-        return 3
+        return 2
 
     @property
     def tau_b_alpha(self):
-        return 3
+        return 2
 
     @property
     def tau_iota_alpha(self):
-        return 3
+        return 2
 
     @property
     def sd_alpha(self):
-        return 3
+        return 2
+
+    @property
+    def gamma_means(self):
+        if self.n_states == 2:
+            return np.array([-1., 0.])
+        return np.array([-1, 0., 1.])
 
     @property
     def data(self):
@@ -127,16 +133,18 @@ class SHLM(SHM):
             tau_g = pm.InverseGamma(
               "tau_g", alpha=self.tau_g_alpha, beta=1., shape=self.n_states)
 
+            logger.info("Using mean_g: {}".format(self.gamma_means))
             if self.n_states == 2:
                 logger.info("Building two-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=np.array([-1., 0.]), sd=1, shape=self.n_states)
+                  "mu_g", mu=self.gamma_means, sd=1, shape=self.n_states)
                 pm.Potential(
-                  "m_opot", var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
+                  "m_opot",
+                  var=tt.switch(mean_g[1] - mean_g[0] < 0., -np.inf, 0.))
             else:
                 logger.info("Building three-state model")
                 mean_g = pm.Normal(
-                  "mu_g", mu=np.array([-1, 0., 1.]), sd=1, shape=self.n_states)
+                  "mu_g", mu=self.gamma_means, sd=1, shape=self.n_states)
                 pm.Potential(
                   'm_opot',
                   tt.switch(mean_g[1] - mean_g[0] < 0, -np.inf, 0)

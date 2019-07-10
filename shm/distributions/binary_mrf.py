@@ -10,8 +10,8 @@ from shm.distributions.categorical_mrf import CategoricalMRF
 class BinaryMRF(CategoricalMRF):
     NAME = "BinaryMRF"
 
-    def __init__(self, G: networkx.Graph, *args, **kwargs):
-        super(BinaryMRF, self).__init__(G=G, k=2, *args, **kwargs)
+    def __init__(self, G: networkx.Graph, beta=1, *args, **kwargs):
+        super(BinaryMRF, self).__init__(G=G, k=2, beta=beta, *args, **kwargs)
 
         self.mode = scipy.repeat(0, self.n_nodes)
         self.__choice = scipy.stats.bernoulli.rvs

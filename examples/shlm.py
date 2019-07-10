@@ -63,7 +63,7 @@ class SHLM(SHM):
     @property
     def gamma_means(self):
         if self.n_states == 2:
-            return np.array([-1., 0.])
+            return np.array([0., 0.])
         return np.array([-1, 0., 1.])
 
     @property
@@ -92,7 +92,7 @@ class SHLM(SHM):
         with pm.Model() as model:
             if self.n_states == 2:
                 logger.info("Using binary-MRF")
-                z = BinaryMRF('z', G=self.graph)
+                z = BinaryMRF('z', G=self.graph, beta=.5)
             else:
                 logger.info("Using categorical-MRF with three states")
                 z = CategoricalMRF('z', G=self.graph, k=3)

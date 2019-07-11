@@ -35,6 +35,10 @@ class CategoricalMRF(Discrete):
         self._beta = beta
 
     @property
+    def edge_correction(self):
+        return self._beta
+
+    @property
     def name(self):
         return CategoricalMRF.NAME
 

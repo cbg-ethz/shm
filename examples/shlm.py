@@ -29,6 +29,7 @@ class SHLM(SHM):
                  graph=None,
                  sampler="nuts"):
         self._data = data
+        self._data = self._data.sort_values([GENE, CONDITION, INTERVENTION])
 
         self._set_link(link_function)
         self._set_family(family)
@@ -46,19 +47,23 @@ class SHLM(SHM):
 
     @property
     def tau_g_alpha(self):
-        return 2
+        return 5
 
     @property
     def tau_b_alpha(self):
-        return 2
+        return 3
 
     @property
     def tau_iota_alpha(self):
-        return 2
+        return 3
 
     @property
     def sd_alpha(self):
         return 2
+
+    @property
+    def edge_correction(self):
+        return .5
 
     @property
     def gamma_means(self):
@@ -92,7 +97,7 @@ class SHLM(SHM):
         with pm.Model() as model:
             if self.n_states == 2:
                 logger.info("Using binary-MRF")
-                z = BinaryMRF('z', G=self.graph, beta=.5)
+                z = BinaryMRF('z', G=self.graph, beta=self.edge_correction)
             else:
                 logger.info("Using categorical-MRF with three states")
                 z = CategoricalMRF('z', G=self.graph, k=3)
@@ -207,6 +212,10 @@ class SHLM(SHM):
         return self.__index_to_gene
 
     @property
+    def _gene_to_index(self):
+        return self.__gene_to_index
+
+    @property
     def _index_to_condition(self):
         return self.__index_to_con
 
@@ -241,6 +250,8 @@ class SHLM(SHM):
 
         self.__gene_data_idx = le.fit_transform(data[GENE].values)
         self.__index_to_gene = {i: e for i, e in zip(
+          self.__gene_data_idx, data[GENE].values)}
+        self.__gene_to_index = {e: i for i, e in zip(
           self.__gene_data_idx, data[GENE].values)}
         self.__genes = sp.unique(list(self.__index_to_gene.values()))
         self.__len_genes = len(self.__genes)

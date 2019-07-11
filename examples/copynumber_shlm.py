@@ -36,7 +36,7 @@ class CopynumberSHLM(SHLM):
 
     @property
     def tau_g_alpha(self):
-        return 3
+        return 5
 
     @property
     def tau_b_alpha(self):
@@ -47,17 +47,21 @@ class CopynumberSHLM(SHLM):
         return 3
 
     @property
-    def tau_sd_alpha(self):
-        return 3
+    def sd_alpha(self):
+        return 2
 
     @property
     def kappa_sd(self):
-        return 1
+        return 2
+
+    @property
+    def edge_correction(self):
+        return .5
 
     @property
     def gamma_means(self):
         if self.n_states == 2:
-            return np.array([-1., 0.])
+            return np.array([0., 0.])
         return np.array([-1, 0., 1.])
 
     def _gamma_mix(self, model, z):

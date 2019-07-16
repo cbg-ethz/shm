@@ -56,7 +56,7 @@ class CopynumberSHLM(SHLM):
 
     @property
     def edge_correction(self):
-        return .25
+        return .0
 
     @property
     def gamma_means(self):

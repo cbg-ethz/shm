@@ -24,8 +24,10 @@ class CopynumberSHLM(SHLM):
                  n_states=2,
                  graph=None,
                  sampler="nuts",
-                 use_affinity=False):
+                 use_affinity=False,
+                 edge_cor=.5):
         self._use_affinity = use_affinity
+        self.__edge_cor = edge_cor
         super().__init__(data=data,
                          family=family,
                          link_function=link_function,
@@ -56,7 +58,7 @@ class CopynumberSHLM(SHLM):
 
     @property
     def edge_correction(self):
-        return .0
+        return self.__edge_cor
 
     @property
     def gamma_means(self):

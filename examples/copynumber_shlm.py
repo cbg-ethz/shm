@@ -24,9 +24,9 @@ class CopynumberSHLM(SHLM):
                  n_states=2,
                  graph=None,
                  sampler="nuts",
-                 use_affinity=False,
-                 edge_cor=.5):
-        self._use_affinity = use_affinity
+                 affinity="data",
+                 edge_cor=.15):
+        self._affinity = affinity
         self.__edge_cor = edge_cor
         super().__init__(data=data,
                          family=family,
@@ -108,18 +108,32 @@ class CopynumberSHLM(SHLM):
             logger.info("Using kappa_sd: {}".format(self.kappa_sd))
             c = pm.Normal("kappa", 0, self.kappa_sd, shape=1)
 
-            if self._use_affinity:
+            if self._affinity == "data":
+                logger.info("Using affinity from data")
                 q = self.data[AFFINITY].values
-            else:
+            elif self._affinity == "leaveout":
+                logger.info("Using no affinity")
                 q = 1
-            mu = q * (gamma[self._gene_data_idx] +
-                      beta[self._gene_cond_data_idx]) + \
-                 l[self._intervention_data_idx] + \
+            elif self._affinity == "estimate":
+                logger.info("Estimating affinity from data")
+                q = pm.Uniform(
+                  "aff", lower=0, upper=1, shape=self.n_interventions)
+            else:
+                raise ValueError("Wrong affinity")
+
+            mu = l[self._intervention_data_idx] + \
                  c * self.data[COPYNUMBER].values
+            ll = (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx])
+
+            if self._affinity == "estimate":
+                mu += q[self._intervention_data_idx] * ll
+            else:
+                mu += q * ll
 
             if self.family == Family.gaussian:
                 logger.info("Using sd_alpha: {}".format(self.sd_alpha))
-                sd = pm.InverseGamma("sd", alpha=self.sd_alpha, beta=1., shape=1)
+                sd = pm.InverseGamma("sd", alpha=self.sd_alpha, beta=1.,
+                                     shape=1)
                 pm.Normal("x",
                           mu=mu,
                           sd=sd,
@@ -127,4 +141,6 @@ class CopynumberSHLM(SHLM):
             else:
                 raise NotImplementedError("Only gaussian family so far")
 
+        if self._affinity == "estimate":
+            return tau_b, beta, l_tau, l, sd, q, c
         return tau_b, beta, l_tau, l, sd, c

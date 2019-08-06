@@ -8,15 +8,15 @@ import arviz as az
 
 
 def n_eff(trace, var_name):
-    eff_samples = (az.effective_sample_size(trace)[var_name]).to_dataframe()
+    eff_samples = (az.effective_sample_size(trace, var_name)).to_dataframe()
     eff_samples = pd.DataFrame({
-        "neff": eff_samples[var_name].values / (len(trace) * 4),
+        "neff": eff_samples[var_name].values / (len(trace) * trace.nchains),
         "param": [var_name + str(i) for i in range(len(eff_samples))]})
     return eff_samples
 
 
 def rhat(trace, var_name):
-    rhat_samples = (az.rhat(trace)[var_name]).to_dataframe()
+    rhat_samples = (az.rhat(trace, var_name)).to_dataframe()
     rhat_samples = pd.DataFrame({
         "rhat": rhat_samples[var_name].values,
         "param": [var_name + str(i) for i in range(len(rhat_samples))]})
@@ -29,7 +29,7 @@ def cut_rhat(trace, var_name):
       bins=[-np.inf, 1.05, 1.1, np.inf], sort=False)
     rhat_samples = pd.DataFrame({
         "cut": [r"$[1, 1.05]$", r"$(1.05, 1.1]$", r"$(1.1, \infty)$"],
-        "bins": rhat_samples
+        "bins": rhat_samples.values
     })
     return rhat_samples
 
@@ -40,6 +40,6 @@ def cut_neff(trace, var_name):
       bins=[-np.inf, .1, .5, 1, np.inf], sort=False)
     eff_samples = pd.DataFrame({
         "cut": [r"$[0, 0.1]$", r"$(0.1, 0.5]$", r"$(0.5, 1]$", r"$(0.5, 1]$"],
-        "bins": eff_samples
+        "bins": eff_samples.values
     })
     return eff_samples

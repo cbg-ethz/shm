@@ -121,10 +121,11 @@ class CopynumberSHLM(SHLM):
             else:
                 raise ValueError("Wrong affinity")
 
-            mu = l[self._intervention_data_idx] + \
-                 c * self.data[COPYNUMBER].values
-            ll = (gamma[self._gene_data_idx] + beta[self._gene_cond_data_idx])
+            mu = l[self._intervention_data_idx]
 
+            ll = (gamma[self._gene_data_idx] +
+                  beta[self._gene_cond_data_idx] +
+                  c * self.data[COPYNUMBER].values)
             if self._affinity == "estimate":
                 mu += q[self._intervention_data_idx] * ll
             else:

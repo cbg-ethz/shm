@@ -6,7 +6,7 @@ if version_info[0] == 2:
 
 
 def readme():
-    with open('README.rst') as fl:
+    with open('README.md') as fl:
         return fl.read()
 
 

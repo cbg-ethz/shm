@@ -54,7 +54,7 @@ class CopynumberSHLM(SHLM):
 
     @property
     def kappa_sd(self):
-        return 2
+        return 1
 
     @property
     def edge_correction(self):

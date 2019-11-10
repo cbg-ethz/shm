@@ -15,62 +15,20 @@
 
 \begin{document}
 
-\begin{figure}
-	\centering
-	\begin{tikzpicture}
-	
-	\node[latent, ultra thick] (g1) {$\gamma_{1}$};
-	\node[latent, ultra thick, right =  of g1] (g2) {$\gamma_{2}$};	
-	\node[latent, ultra thick, right = 3.5cm of g2] (g3) {$\gamma_{3}$};
-	\node[latent, ultra thick, right =  of g3] (g4) {$\gamma_{4}$};	
 
-	\node[latent, ultra thick, above right = of g2] (z2) {$z_{2}$};	
-	\node[latent, ultra thick, above = of z2] (z1) {$z_{1}$};	
-	\node[latent, ultra thick, above left = of g3] (z3) {$z_{3}$};
-	\node[latent, ultra thick, above = of z3] (z4) {$z_{4}$};
-
-
-	\node[latent,ultra thick, below left=1cm and .5cm of g1] (b11) {$\beta_{1,c_1}$};
-	\node[below right=1cm and .25cm of g1] (b12) {$\dots$};	
-	\node[ below left=1cm and .25cm of g3] (b31) {$\dots$};
-	\node[ below right=1cm and .25cm of g3] (b32) {$\dots$};
-	\node[ below left=1cm and .25cm of g2] (b21) {$\dots$};
-	\node[ below right=1cm and .25cm of g2] (b22) {$\dots$};	
-	\node[ below left=1cm and .25cm of g4] (b41) {$\dots$};
-	\node[ below right=1cm and .25cm of g4] (b42) {$\dots$};
-		
-	\node[obs, ultra thick, below left=1cm and .75cm of b11] (x111) {};
-	\node[ below right=1cm and .75cm of b11] (x112) {$\cdots$};
-	\node[below =.05cm of x111,align=center] () {$x_{1,c_1,s_1}$}; 
-
-	\node[latent, ultra thick, left = of x111] (l1) {$l_{s_1}$};
-	\node[obs, ultra thick, above =.5cm of l1,align=center] (cn1) {}; 
-	\node[above =.05cm of cn1,align=center] () {$c_{1,c_1}$}; 
-
+\begin{align*}	
+\mathbf{z} \sim \qquad  \qquad
+\begin{tikzpicture}[transform canvas={scale=.65}]
+	\node[latent, ultra thick] (z1) {};	
+	\node[latent, ultra thick, above right = .25cm and 1cm of z1] (z2) {};	
+	\node[latent, ultra thick, above left = .25cm and 1cm of z1] (z3) {};;
 	\draw [thick] (z1) -- (z2);
-	\draw [thick] (z2) -- (z3);
-	\draw [thick] (z3) -- (z4);
-	\edge [thick] {g1} {b11};
-	\edge [thick] {g1} {b12};
-	\edge [thick] {g2} {b21};
-	\edge [thick] {g2} {b22};
-	\edge [thick] {g3} {b31};
-	\edge [thick] {g3} {b32};
-	\edge [thick] {g4} {b41};
-	\edge [thick] {g4} {b42};
-	\edge [thick] {b11} {x111};
-	\edge [thick] {b11} {x112};
-	\edge [thick] {l1} {x111};
-	\edge [thick] {cn1} {x111};
-	\edge [thick] {z1} {g1};
-	\edge [thick] {z2} {g2};
-	\edge [thick] {z3} {g3};
-	\edge [thick] {z4} {g4};
+	\draw [thick] (z1) -- (z3);
+\end{tikzpicture} \\
+\boldsymbol \gamma \mid \mathbf{z} & \sim  \qquad\mathcal{N}(\boldsymbol \mu_{\mathbf{z}}, \sigma^2 \mathbf{I}) \\
+\mathbf{y} \mid \boldsymbol \gamma & \sim  \qquad\mathbb{P}\left( h\left( \boldsymbol \gamma \right) \right)
+\end{align*}	
 
-
-\end{tikzpicture}
-
-\end{figure}
 \end{document}
 
 

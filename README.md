@@ -1,4 +1,4 @@
-# Structured hierarchical models <img src="https://dirmeier/shm/master/_fig/sticker_shm.png" align="right" width="160px"/>
+# Structured hierarchical models <img src="https://github.com/dirmeier/shm/blob/master/_fig/sticker_shm.png" align="right" width="160px"/>
 
 ![Project Status](http://www.repostatus.org/badges/latest/concept.svg)](http://www.repostatus.org/#concept)
 [![Build Status](https://travis-ci.org/dirmeier/netReg.svg?branch=master)](https://travis-ci.org/dirmeier/netReg)

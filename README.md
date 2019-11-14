@@ -1,22 +1,20 @@
-# Structured hierarchical models
+# Structured hierarchical models <img src="https://dirmeier/shm/master/_fig/sticker_shm.png" align="right" width="160px"/>
 
-> Deep hierarchical programs combined with Markov random fields.
+![Project Status](http://www.repostatus.org/badges/latest/concept.svg)](http://www.repostatus.org/#concept)
+[![Build Status](https://travis-ci.org/dirmeier/netReg.svg?branch=master)](https://travis-ci.org/dirmeier/netReg)
+[![codedacy](https://api.codacy.com/project/badge/Grade/a4cca665933a4def9c2cfc88d7bbbeae)](https://www.codacy.com/app/simon-dirmeier/pybda?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=cbg-ethz/pybda&amp;utm_campaign=Badge_Grade)
+
+> Deep hierarchical programs combined with categprical Markov random fields.
 
 ## About
 
-*Structured hierarchical models* (SHMs) utilize deep hierarchical models to represent heterogeneous data, and combine them with categorical Markov random fields (MRFs) to cluster the top-level latent variable of the hierarchy. The MRF to encode biological prior information over functionally related biological entities. The SHM is especially useful for extremely noisy, experimental data sets for which the true data generating process is difficult to model, for instance due to lacking domain knowledge or high stochasticity of the interventions.
+*Structured hierarchical models* are a family of generative models for probabilistic inference of causal effects from genetic perturbation screens. SHMs utilize classical hierarchical models to represent heterogeneous data and combine them with categorical Markov random fields to encode biological prior information over functionally related genes. The random field induces a clustering of the genes which helps to inform inference of parameters in the hierarchical model. SHMs are designed for extremely noisy, experimental data sets for which the true data generating process is difficult to model.
 
-An SHM has the following general form:
+An SHM has the following basic structure.
 
-$$\begin{align}
-\mathbf{z} & \sim \text{Categorical-MRF}\\
-\boldsymbol \tau & \sim P_K(\tau) \\
-\boldsymbol \mu & \sim \mathcal{N}_K(\mathbf{0}, \mathbf{I}) \\
-\gamma_g & \mid z_g \sim \mathcal{N}(\mu_{z_g}, \tau_{z_g}^2) \\
-x_{gci} & \mid \gamma_g \sim \text{HM}(\gamma_g)
-\end{align}$$
+ <img src="https://dirmeier/shm/master/_fig/sticker_shm.png" align="center" width="300px"/>
 
-The top-level categorical variables $z_g$ are latent cluster assignments for $g$ genes with effect sizes $\gamma_g$. The effect sizes are used to parameterize a deep hierarchical model, for instance to represent a heterogeneous data set of multiple conditions $c$ and interventions $i$, and readouts $x_{gci}$.
+The top-level categorical variables $z_g$ are latent cluster assignments for $g$ genes with effect sizes $\gamma_g$. The effect sizes are used to parameterize a deep hierarchical model, for instance to represent a heterogeneous data set $y_{gci}$ of multiple conditions $c$ and interventions $i$.
 
 ## Installation
 
@@ -29,9 +27,6 @@ pip install https://github.com/dirmeier/shm/archive/<version>.tar.gz
 where `<version>` is the most recent release on GitHub. 
 Please don't install from the master branch directly.
 
-## Documentation
-
-Check out the documentation [here](https://shm.readthedocs.io/en/latest/) to get you started with building your own SHM.
 
 ## Citation
 

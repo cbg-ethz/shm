@@ -1,6 +1,6 @@
 # Structured hierarchical models <img src="https://github.com/dirmeier/shm/blob/master/_fig/sticker_shm.png" align="right" width="160px"/>
 
-![Project Status](http://www.repostatus.org/badges/latest/concept.svg)](http://www.repostatus.org/#concept)
+[![Project Status](http://www.repostatus.org/badges/latest/concept.svg)](http://www.repostatus.org/#concept)
 [![Build Status](https://travis-ci.org/dirmeier/netReg.svg?branch=master)](https://travis-ci.org/dirmeier/netReg)
 [![codedacy](https://api.codacy.com/project/badge/Grade/a4cca665933a4def9c2cfc88d7bbbeae)](https://www.codacy.com/app/simon-dirmeier/pybda?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=cbg-ethz/pybda&amp;utm_campaign=Badge_Grade)
 
@@ -12,7 +12,9 @@
 
 An SHM has the following basic structure.
 
- <img src="https://dirmeier/shm/master/_fig/sticker_shm.png" align="center" width="300px"/>
+<div align="center">
+	<img src="https://github.com/dirmeier/shm/blob/master/_fig/model.png" width="300px"/>
+</div>
 
 The top-level categorical variables $z_g$ are latent cluster assignments for $g$ genes with effect sizes $\gamma_g$. The effect sizes are used to parameterize a deep hierarchical model, for instance to represent a heterogeneous data set $y_{gci}$ of multiple conditions $c$ and interventions $i$.
 

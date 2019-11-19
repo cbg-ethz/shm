@@ -34,7 +34,7 @@ Please don't install from the master branch directly.
 
 If you like this package, please consider citing it:
 
-> Dirmeier, S. and Beerenwinkel, N. (2019). Structured hierarchical models for probabilistic inference from noisy, heterogeneous data. *bioarvix*
+> Dirmeier, S. and Beerenwinkel, N. (2019). Structured hierarchical models for probabilistic inference from perturbation screening data. *bioaRxiv*
 
 ## Author
 

@@ -29,10 +29,10 @@ doc_deps = [
 
 setup(
   name='shm',
-  version='0.0.1',
+  version='1.0.0',
   description='Structured hierarchical models using PyMC3',
   long_description=readme(),
-  url='https://github.com/dirmeier/shm',
+  url='https://github.com/cbg-ethz/shm',
   author='Simon Dirmeier',
   author_email='simon.dirmeier@web.de',
   license='GPLv3',

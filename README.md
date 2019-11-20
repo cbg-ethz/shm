@@ -1,10 +1,8 @@
 # Structured hierarchical models <img src="https://github.com/cbg-ethz/shm/blob/master/_fig/sticker_shm.png" align="right" width="160px"/>
 
 [![Project Status](http://www.repostatus.org/badges/latest/concept.svg)](http://www.repostatus.org/#concept)
-[![Build Status](https://travis-ci.org/cbg-ethz/shm.svg?branch=master)](https://travis-ci.org/cbg-ethz/shm)
-[![codedacy](https://api.codacy.com/project/badge/Grade/a4cca665933a4def9c2cfc88d7bbbeae)](https://www.codacy.com/app/simon-dirmeier/pybda?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=cbg-ethz/pybda&amp;utm_campaign=Badge_Grade)
 
-> Deep hierarchical programs combined with categprical Markov random fields.
+> Deep hierarchical programs combined with categorical Markov random fields.
 
 ## About
 

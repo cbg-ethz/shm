@@ -24,7 +24,8 @@ import arviz as az
 
 
 def n_eff(trace, var_name):
-    eff_samples = (az.ess(data=trace, var_names=var_name, relative=True)).to_dataframe()
+    eff_samples = (az.ess(data=trace, var_names=var_name, relative=True)) \
+        .to_dataframe()
     eff_samples = pd.DataFrame({
         "neff": eff_samples[var_name].values,
         "param": [var_name + str(i) for i in range(len(eff_samples))]})

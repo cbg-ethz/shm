@@ -18,7 +18,6 @@
 # @author = 'Simon Dirmeier'
 # @email = 'simon.dirmeier@bsse.ethz.ch'
 
-
 import numpy
 import numpy as np
 import pandas as pd
@@ -34,43 +33,40 @@ from shm.globals import READOUT
 from shm.util import compute_posterior_probabilities
 
 sns.set_style(
-  "white",
-  {
-      "xtick.bottom": True,
-      "ytick.left": True,
-      "axes.spines.top": False,
-      "axes.spines.right": False,
-  },
+    "white",
+    {
+        "xtick.bottom": True,
+        "ytick.left": True,
+        "axes.spines.top": False,
+        "axes.spines.right": False,
+    },
 )
 
 
-def _plot_dotline(table, boundary, var, low, mid, high,
-                  legend, title, xlabel, xlim, xticks):
+def _plot_dotline(table, boundary, var, low, mid, high, legend, title, xlabel,
+                  xlim, xticks):
     fig, ax = plt.subplots()
 
     plt.axvline(x=boundary[0], color="grey", linestyle="--", linewidth=.5)
     plt.axvline(x=boundary[1], color="grey", linestyle="--", linewidth=.5)
     plt.axvline(x=boundary[2], color="grey", linestyle="--", linewidth=.5)
 
-    plt.hlines(y=table["param"].values[low],
-               xmin=xlim, xmax=table[var].values[low],
-               linewidth=.5, color="#023858")
-    plt.hlines(y=table["param"].values[mid],
-               xmin=xlim, xmax=table[var].values[mid],
-               linewidth=.5, color="#045a8d")
-    plt.hlines(y=table["param"].values[high],
-               xmin=xlim, xmax=table[var].values[high],
-               linewidth=.5, color="#74a9cf")
+    plt.hlines(y=table["param"].values[low], xmin=xlim,
+               xmax=table[var].values[low], linewidth=.5, color="#023858")
+    plt.hlines(y=table["param"].values[mid], xmin=xlim,
+               xmax=table[var].values[mid], linewidth=.5, color="#045a8d")
+    plt.hlines(y=table["param"].values[high], xmin=xlim,
+               xmax=table[var].values[high], linewidth=.5, color="#74a9cf")
 
-    plt.plot(table[var].values[low], table["param"].values[low],
-             "o", markersize=3, color="#023858",
+    plt.plot(table[var].values[low], table["param"].values[low], "o",
+             markersize=3, color="#023858",
              label="${} < {}$".format(legend, boundary[0]))
-    plt.plot(table[var].values[mid], table["param"].values[mid],
-             "o", markersize=3, color="#045a8d",
+    plt.plot(table[var].values[mid], table["param"].values[mid], "o",
+             markersize=3, color="#045a8d",
              label="${} < {}$".format(legend, boundary[1]))
-    plt.plot(table[var].values[high], table["param"].values[high],
-             "o", markersize=3, color="#74a9cf",
-             label="${} \geq {}$".format(legend, boundary[1]))
+    plt.plot(table[var].values[high], table["param"].values[high], "o",
+             markersize=3, color="#74a9cf",
+             label=r"${} \geq {}$".format(legend, boundary[1]))
     plt.title(title, loc="Left")
     plt.legend(bbox_to_anchor=(1.0, 0.5), loc="center left", frameon=False)
     plt.xlabel(xlabel)
@@ -123,8 +119,9 @@ def _var_names(var_names, data):
                         all_vars.append(var)
         else:
             all_vars = list(data.data_vars)
-        excluded_vars = [i[1:] for i in var_names if
-                         i.startswith("~") and i not in all_vars]
+        excluded_vars = [
+            i[1:] for i in var_names if i.startswith("~") and i not in all_vars
+        ]
         if excluded_vars:
             var_names = [i for i in all_vars if i not in excluded_vars]
     return var_names
@@ -132,14 +129,16 @@ def _var_names(var_names, data):
 
 def _extract(trace):
     divergent_data = convert_to_dataset(trace, group="sample_stats")
-    _, diverging_mask = xarray_to_ndarray(
-      divergent_data, var_names=("diverging",), combined=True)
+    _, diverging_mask = xarray_to_ndarray(divergent_data,
+                                          var_names=("diverging", ),
+                                          combined=True)
     diverging_mask = np.squeeze(diverging_mask)
 
     posterior_data = convert_to_dataset(trace, group="posterior")
     var_names = _var_names(["beta", "gamma", "tau_b", "tau_g"], posterior_data)
-    var_names, _posterior = xarray_to_ndarray(
-      get_coords(posterior_data, {}), var_names=var_names, combined=True)
+    var_names, _posterior = xarray_to_ndarray(get_coords(posterior_data, {}),
+                                              var_names=var_names,
+                                              combined=True)
     return diverging_mask, var_names, _posterior
 
 
@@ -149,15 +148,14 @@ def plot_neff(trace, var_name, variable=None):
     if variable is not None:
         eff_samples["param"] = variable
     low = np.where(eff_samples["neff"].values < boundary[0])
-    mid = np.where(np.logical_and(
-      eff_samples["neff"].values >= boundary[0],
-      eff_samples["neff"].values < boundary[1]))
+    mid = np.where(
+        np.logical_and(eff_samples["neff"].values >= boundary[0],
+                       eff_samples["neff"].values < boundary[1]))
     high = np.where(eff_samples["neff"].values >= boundary[1])
 
-    return _plot_dotline(eff_samples, boundary, "neff",
-                         low, mid, high,
-                         "n_eff / n", "Effective sample size", "n_eff / n",
-                         -.1, boundary)
+    return _plot_dotline(eff_samples, boundary, "neff", low, mid, high,
+                         "n_eff / n", "Effective sample size", "n_eff / n", -.1,
+                         boundary)
 
 
 def plot_rhat(trace, var_name, variable=None):
@@ -166,15 +164,14 @@ def plot_rhat(trace, var_name, variable=None):
     if variable is not None:
         rhat_samples["param"] = variable
     low = np.where(rhat_samples["rhat"].values < boundary[0])
-    mid = np.where(np.logical_and(
-      rhat_samples["rhat"].values >= boundary[0],
-      rhat_samples["rhat"].values < boundary[1]))
+    mid = np.where(
+        np.logical_and(rhat_samples["rhat"].values >= boundary[0],
+                       rhat_samples["rhat"].values < boundary[1]))
     high = np.where(rhat_samples["rhat"].values >= boundary[1])
 
-    return _plot_dotline(rhat_samples, boundary, "rhat",
-                         low, mid, high, r"\hat{R}",
-                         "Potential scale reduction factor", r"$\hat{R}$",
-                         0.95, [1] + boundary)
+    return _plot_dotline(rhat_samples, boundary, "rhat", low, mid, high,
+                         r"\hat{R}", "Potential scale reduction factor",
+                         r"$\hat{R}$", 0.95, [1] + boundary)
 
 
 def _plot_bar(data, title):
@@ -264,8 +261,7 @@ def plot_hist(trace, var_name, idx, title="", bins=60):
 def plot_steps(data, ppc_trace=None, bins=50, histtype="step"):
     fig, ax = plt.subplots()
     ax.hist(data[READOUT].values, bins=bins, lw=2, density=True,
-            edgecolor='black', histtype=histtype, color='grey',
-            label='Data')
+            edgecolor='black', histtype=histtype, color='grey', label='Data')
     if ppc_trace:
         ax.hist(np.mean(ppc_trace['x'], 0), bins=bins, lw=2, density=True,
                 edgecolor='#316675', histtype=histtype, color='grey',
@@ -301,34 +297,32 @@ def plot_posterior_labels(trace, genes, nstates=2):
 
     fig, ax = plt.subplots()
 
-    ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black',
-            width=barWidth, label="Dependency factor")
+    ax.bar(pos, probs[:, 0], color='#E84646', edgecolor='black', width=barWidth,
+           label="Dependency factor")
     ax.bar(pos, probs[:, 1], bottom=probs[:, 0], color='lightgrey',
-            edgecolor='black', width=barWidth, label="Neutral")
+           edgecolor='black', width=barWidth, label="Neutral")
     if nstates == 3:
-        ax.bar(pos, probs[:, 2], bottom=bars,
-               color='#316675', edgecolor='black',
-               width=barWidth, label="Restriction factor")
+        ax.bar(pos, probs[:, 2], bottom=bars, color='#316675',
+               edgecolor='black', width=barWidth, label="Restriction factor")
     ax.set_facecolor('white')
     plt.tick_params('both', left=True)
     plt.ylim([-0.05, 1.05])
     plt.yticks([0, .25, .5, .75, 1])
     plt.xticks(pos, genes, rotation=90, fontsize=10)
     plt.title('Posterior class labels', loc='left', fontsize=16)
-    plt.legend(loc='center right', fancybox=False, framealpha=0,
-               shadow=False,
+    plt.legend(loc='center right', fancybox=False, framealpha=0, shadow=False,
                borderpad=1, bbox_to_anchor=(1.25, 0.5), ncol=1)
     return ax
 
 
 def plot_confusion_matrix(confusion_matrix, class_names, fontsize=14):
-    df_cm = pd.DataFrame(
-      confusion_matrix, index=class_names, columns=class_names)
+    df_cm = pd.DataFrame(confusion_matrix, index=class_names,
+                         columns=class_names)
 
     fig, ax = plt.subplots()
-    heatmap = sns.heatmap(df_cm, annot=True, cmap="Blues", fmt="d", cbar=False, ax=ax)
-    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(),
-                                 va='center',
+    heatmap = sns.heatmap(df_cm, annot=True, cmap="Blues", fmt="d", cbar=False,
+                          ax=ax)
+    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), va='center',
                                  fontsize=fontsize - 2)
     heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(),
                                  fontsize=fontsize - 2)

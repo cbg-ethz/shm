@@ -113,7 +113,7 @@ class CategoricalMRF(Discrete):
         2) Marin - Bayesian essentials in R
         """
         mb = self._markov_blank(idx)
-        point_label, blanket_labs = point[idx], point[mb]
+        _, blanket_labs = point[idx], point[mb]
         mb_weights = self.__adj[mb, idx]
         potentials = [
             numpy.sum((blanket_labs == i) * mb_weights)

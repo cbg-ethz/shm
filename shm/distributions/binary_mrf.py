@@ -58,7 +58,7 @@ class BinaryMRF(CategoricalMRF):
         2) Marin - Bayesian essentials in R
         """
         mb = self._markov_blank(idx)
-        point_label, blanket_labs = point[idx], point[mb]
+        _, blanket_labs = point[idx], point[mb]
         mb_weights = self._adj[mb, idx]
         s1 = numpy.sum((blanket_labs == 1) * mb_weights)
         s0 = numpy.sum((blanket_labs == 0) * mb_weights)

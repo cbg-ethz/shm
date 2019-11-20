@@ -34,7 +34,7 @@ Please don't install from the master branch directly.
 
 If you like this package, please consider citing it:
 
-> Dirmeier, S. and Beerenwinkel, N. (2019). Structured hierarchical models for probabilistic inference from perturbation screening data. *bioaRxiv*
+> Dirmeier, S. and Beerenwinkel, N. (2019). Structured hierarchical models for probabilistic inference from perturbation screening data. *bioRxiv*. [https://doi.org/10.1101/848234](https://doi.org/10.1101/848234)
 
 ## Author
 
